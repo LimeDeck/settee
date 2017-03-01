@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "target": "ES6",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "inlineSourceMap": true,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "preserveConstEnums": true,
+    "outDir": ".test/build",
+    "lib": ["es2016", "dom"]
+  },
+  "include": [
+    "src/**/*"
+  ]
+}

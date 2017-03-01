@@ -1,0 +1,80 @@
+{
+  "name": "settee",
+  "version": "1.0.0",
+  "description": "Modern JavaScript ODM for Couchbase",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "rm -rf ./dist; tsc --project tsconfig.npm.json",
+    "dev": "tsc --watch",
+    "lint": "tslint --project ./tslint.json",
+    "pretest": "npm run lint",
+    "test": "ava --serial",
+    "test:watch": "ava -w --serial",
+    "test:cov": "nyc ava --serial",
+    "test:ci": "nyc ava --serial --verbose",
+    "test:clean": "rm -rf ./.test",
+    "report": "nyc report --reporter=html; open .test/coverage/index.html",
+    "coverage": "nyc report --reporter=text-lcov | coveralls"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LimeDeck/settee.git"
+  },
+  "keywords": [
+    "odm",
+    "couchbase",
+    "nosql",
+    "json",
+    "document"
+  ],
+  "author": {
+    "name": "LimeDeck",
+    "email": "mail@limedeck.io",
+    "url": "https://limedeck.io"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/LimeDeck/settee/issues"
+  },
+  "homepage": "https://github.com/LimeDeck/settee#readme",
+  "typings": "src/typings",
+  "devDependencies": {
+    "@types/chai": "^3.4.34",
+    "@types/chai-as-promised": "^0.0.29",
+    "@types/couchbase": "^2.1.30",
+    "@types/lodash": "^4.14.52",
+    "@types/sinon": "^1.16.35",
+    "@types/uuid": "^2.0.29",
+    "ava": "^0.18.1",
+    "chai": "^3.5.0",
+    "chai-as-promised": "^6.0.0",
+    "coveralls": "^2.11.16",
+    "eslint": "^3.16.0",
+    "eslint-config-standard": "^6.2.1",
+    "eslint-friendly-formatter": "^2.0.7",
+    "eslint-plugin-ava": "^4.2.0",
+    "eslint-plugin-promise": "^3.4.2",
+    "eslint-plugin-standard": "^2.0.1",
+    "nyc": "^10.1.2",
+    "sinon": "^1.17.7",
+    "testdouble": "^1.11.1",
+    "tslint": "^4.4.2",
+    "typescript": "^2.2.1"
+  },
+  "dependencies": {
+    "couchbase": "^2.3.0",
+    "lodash": "^4.17.4",
+    "moment": "^2.17.1",
+    "uuid": "^3.0.1"
+  },
+  "ava": {
+    "files": "test/**/*.spec.js",
+    "source": [
+      ".test/build/**/*.js"
+    ]
+  },
+  "nyc": {
+    "temp-directory": ".test/output",
+    "report-dir": ".test/coverage"
+  }
+}
