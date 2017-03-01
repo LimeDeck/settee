@@ -1,0 +1,28 @@
+language: node_js
+
+node_js:
+  - "7.5.0"
+  - "6"
+
+services:
+  - docker
+
+before_install:
+  - docker pull couchbase:community
+  - travis_retry docker network create settee_net
+  - docker run -d --name db --net settee_net -p 8091-8094:8091-8094 -p 11210:11210 couchbase:community
+  - docker ps -a
+  - sleep 10
+  - travis_retry docker exec db couchbase-cli cluster-init -c 127.0.0.1:8091 --cluster-username=admin --cluster-password=secret --cluster-ramsize=768 --cluster-index-ramsize=512 --cluster-fts-ramsize=256 --index-storage-setting=default --services=data,index,query,fts
+  - travis_retry docker exec db couchbase-cli bucket-create -c 127.0.0.1:8091 --bucket=testing --bucket-ramsize=768 --enable-flush=1 --bucket-replica=0 --wait -u admin -p secret
+  - docker exec db cbq --script="CREATE PRIMARY INDEX ON testing"
+
+script: npm run test:ci
+
+after_success:
+  - if [[ "$TRAVIS_JOB_NUMBER" == *.1 ]]; then npm run coverage; fi
+
+env:
+  global:
+      - CLUSTER_URL: 127.0.0.1
+      - BUCKET_NAME: "testing"

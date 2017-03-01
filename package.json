@@ -4,14 +4,15 @@
   "description": "Modern JavaScript ODM for Couchbase",
   "main": "dist/index.js",
   "scripts": {
-    "build": "rm -rf ./dist; tsc --project tsconfig.npm.json",
+    "build": "tsc",
+    "build:npm": "rm -rf ./dist; tsc --project tsconfig.npm.json",
     "dev": "tsc --watch",
     "lint": "tslint --project ./tslint.json",
     "pretest": "npm run lint",
     "test": "ava --serial",
     "test:watch": "ava -w --serial",
     "test:cov": "nyc ava --serial",
-    "test:ci": "nyc ava --serial --verbose",
+    "test:ci": "npm run build; nyc ava --serial --verbose",
     "test:clean": "rm -rf ./.test",
     "report": "nyc report --reporter=html; open .test/coverage/index.html",
     "coverage": "nyc report --reporter=text-lcov | coveralls"
