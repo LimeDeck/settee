@@ -105,7 +105,7 @@ test('it supports callback as default value for number type', t => {
 test('it supports timestamp in ms as default value for date type', t => {
   t.truthy(
     Type.date(1487878333000).getDefaultValue()
-      .isSame(moment('2017-02-23T20:32:13.000'))
+      .isSame(moment.utc('2017-02-23T19:32:13+00:00'))
   )
 
   const err = t.throws(() => {
@@ -118,14 +118,14 @@ test('it supports timestamp in ms as default value for date type', t => {
 test('it supports valid ISO date string as default value for date type', t => {
   t.truthy(
     Type.date('2017-02-23T19:32:13+00:00').getDefaultValue()
-      .isSame(moment('2017-02-23T20:32:13.000'))
+      .isSame(moment.utc('2017-02-23T19:32:13+00:00'))
   )
 })
 
 test('it supports valid moment instance as default value for date type', t => {
   t.truthy(
-    Type.date(moment('2017-02-23T19:32:13+00:00')).getDefaultValue()
-      .isSame(moment('2017-02-23T20:32:13.000'))
+    Type.date(moment.utc('2017-02-23T19:32:13+00:00')).getDefaultValue()
+      .isSame(moment.utc('2017-02-23T19:32:13+00:00'))
   )
 })
 
@@ -134,13 +134,13 @@ test('it supports callback as default value for date type', t => {
     .should.eq(new Date().getFullYear())
 
   t.truthy(
-    Type.date(() => moment('2017-02-23T19:32:13+00:00')).getDefaultValue()
-      .isSame(moment('2017-02-23T20:32:13.000'))
+    Type.date(() => moment.utc('2017-02-23T19:32:13+00:00')).getDefaultValue()
+      .isSame(moment.utc('2017-02-23T19:32:13+00:00'))
   )
 
   t.truthy(
     Type.date(() => '2017-02-23T19:32:13+00:00').getDefaultValue()
-      .isSame(moment('2017-02-23T20:32:13.000'))
+      .isSame(moment.utc('2017-02-23T19:32:13+00:00'))
   )
 
   const err = t.throws(() => {

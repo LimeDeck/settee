@@ -163,7 +163,7 @@ export default class Type {
       case 'number':
       case 'string':
       case 'boolean':
-        value = moment(value)
+        value = moment.utc(value)
 
       default:
         break
@@ -196,8 +196,8 @@ export default class Type {
           /* istanbul ignore if */
           if (!
               (value.hasOwnProperty('$type')
-            && value.hasOwnProperty('docId')
-            && value.hasOwnProperty('docType'))
+              && value.hasOwnProperty('docId')
+              && value.hasOwnProperty('docType'))
           ) {
             throw new TypeError(`Invalid 'reference' format.`)
           }
