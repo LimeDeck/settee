@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "build:npm": "rm -rf ./dist; tsc --project tsconfig.npm.json",
+    "build:npm": "rm -rf ./dist; tsc --project tsconfig.npm.json; cp ./src/typings.d.ts ./dist/typings.d.ts",
     "dev": "tsc --watch",
     "lint": "tslint --project ./tslint.json",
     "pretest": "npm run lint",
@@ -38,7 +38,7 @@
     "url": "https://github.com/LimeDeck/settee/issues"
   },
   "homepage": "https://github.com/LimeDeck/settee#readme",
-  "typings": "src/typings",
+  "typings": "dist/index",
   "devDependencies": {
     "@types/chai": "^3.4.34",
     "@types/chai-as-promised": "^0.0.29",

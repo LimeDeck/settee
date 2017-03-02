@@ -83,6 +83,32 @@ class Settee {
         });
     }
     /**
+     * Establishes the connection to the bucket. Sets active bucket.
+     *
+     * @param {string} clusterUrl
+     * @param {string} bucketName
+     * @returns {Promise<Bucket>}
+     */
+    connect(clusterUrl, bucketName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                const cluster = new couchbase_1.Cluster(clusterUrl);
+                const bucket = cluster.openBucket(bucketName);
+                /* istanbul ignore if */
+                if (!this.isValidBucket(bucket)) {
+                    return reject(new errors_1.SetteeError('Invalid bucket type.'));
+                }
+                bucket.on('connect', () => {
+                    this.useBucket(bucket);
+                    resolve(bucket);
+                });
+                bucket.on('error', () => {
+                    return reject(new errors_1.SetteeError('Connection to the bucket could not be established.'));
+                });
+            });
+        });
+    }
+    /**
      * Terminates the connection to the bucket.
      *
      * @return {Promise<void>}
@@ -108,5 +134,4 @@ class Settee {
         return bucket.constructor && ['Bucket', 'MockBucket'].includes(bucket.constructor.name);
     }
 }
-exports.Settee = Settee;
-exports.settee = new Settee();
+exports.default = Settee;

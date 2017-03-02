@@ -5,8 +5,8 @@ import { connect, testingConfig } from '../_bootstrap'
 import Storage from '../../.test/build/storage'
 import Indexer from '../../.test/build/indexes/indexer'
 import Model from '../../.test/build/entities/model'
+import Settee from '../../.test/build/settee'
 import { Schema, Type } from '../../.test/build/index'
-import { Settee } from '../../.test/build/settee'
 import { SetteeError } from '../../.test/build/errors'
 
 let bucket, settee

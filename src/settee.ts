@@ -9,7 +9,7 @@ import Schema from './entities/schema'
 import SchemaContainer from './services/schemaContainer'
 import { Bucket } from './typings'
 
-export class Settee {
+export default class Settee {
   /**
    * Container for registered schemas.
    */
@@ -172,5 +172,3 @@ export class Settee {
     return bucket.constructor && ['Bucket', 'MockBucket'].includes(bucket.constructor.name)
   }
 }
-
-export const settee = new Settee()

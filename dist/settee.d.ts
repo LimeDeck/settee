@@ -4,7 +4,7 @@ import Model from './entities/model';
 import Schema from './entities/schema';
 import SchemaContainer from './services/schemaContainer';
 import { Bucket } from './typings';
-export declare class Settee {
+export default class Settee {
     /**
      * Container for registered schemas.
      */
@@ -65,6 +65,14 @@ export declare class Settee {
      */
     buildIndexes(): Promise<boolean>;
     /**
+     * Establishes the connection to the bucket. Sets active bucket.
+     *
+     * @param {string} clusterUrl
+     * @param {string} bucketName
+     * @returns {Promise<Bucket>}
+     */
+    connect(clusterUrl: string, bucketName: string): Promise<Bucket>;
+    /**
      * Terminates the connection to the bucket.
      *
      * @return {Promise<void>}
@@ -78,4 +86,3 @@ export declare class Settee {
      */
     protected isValidBucket(bucket: any): bucket is Bucket;
 }
-export declare const settee: Settee;

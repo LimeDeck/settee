@@ -1,6 +1,10 @@
+import Settee from './settee'
 import Schema from './entities/schema'
 import Type from './entities/type'
 
-export { settee } from './settee'
+const settee: Settee = new Settee()
+
+export { settee }
 export { Schema }
 export { Type }
+export * from './errors'
