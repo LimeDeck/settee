@@ -80,7 +80,12 @@ export interface Bucket extends CbBucket {
     callback: (error: number, results: CbMultiGetResult) => void
   ): void
 
-  manager (): BucketManager
+  manager (): BucketManager,
+
+  on (
+    eventName: string,
+    callback: () => any
+  ): void
 }
 
 export interface BucketManager extends CbBucketManager {

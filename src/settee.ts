@@ -1,4 +1,4 @@
-import { N1qlQuery } from 'couchbase'
+import { Cluster, N1qlQuery } from 'couchbase'
 const consistencies = N1qlQuery.Consistency
 
 import { SetteeError } from './errors'
@@ -114,6 +114,36 @@ export class Settee {
    */
   public async buildIndexes (): Promise<boolean> {
     return this.indexer.registerIndexes()
+  }
+
+  /**
+   * Establishes the connection to the bucket. Sets active bucket.
+   *
+   * @param {string} clusterUrl
+   * @param {string} bucketName
+   * @returns {Promise<Bucket>}
+   */
+  public async connect (clusterUrl: string, bucketName: string): Promise<Bucket> {
+    return new Promise<Bucket>((resolve, reject) => {
+      const cluster = new Cluster(clusterUrl)
+      const bucket = cluster.openBucket(bucketName)
+
+      /* istanbul ignore if */
+      if (!this.isValidBucket(bucket)) {
+        return reject(new SetteeError('Invalid bucket type.'))
+      }
+
+      bucket.on('connect', () => {
+        this.useBucket(bucket)
+        resolve(bucket)
+      })
+
+      bucket.on('error', () => {
+        return reject(new SetteeError(
+          'Connection to the bucket could not be established.'
+        ))
+      })
+    })
   }
 
   /**

@@ -24,6 +24,18 @@ test.beforeEach(() => {
   settee = new Settee()
 })
 
+test('it connects to the cluster and sets the active bucket', async t => {
+  await settee.connect('192.168.99.100', 'testing')
+
+  settee.getBucket().should.not.be.undefined
+  settee.getStorage().should.be.instanceOf(Storage)
+  settee.indexer.should.be.instanceOf(Indexer)
+
+  // error
+  await settee.connect('192.168.99.100', 'invalid-bucket')
+    .should.be.rejectedWith(SetteeError, /could not be established/)
+})
+
 test('it sets an active bucket and creates storage with indexer', t => {
   settee.useBucket(bucket)
 
