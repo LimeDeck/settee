@@ -1,6 +1,6 @@
 require('chai').use(require('chai-as-promised')).should()
 import test from 'ava'
-import { connect } from '../_bootstrap'
+import { connect, testingConfig } from '../_bootstrap'
 
 import Storage from '../../.test/build/storage'
 import Indexer from '../../.test/build/indexes/indexer'
@@ -25,14 +25,14 @@ test.beforeEach(() => {
 })
 
 test('it connects to the cluster and sets the active bucket', async t => {
-  await settee.connect('192.168.99.100', 'testing')
+  await settee.connect(testingConfig.cluster, testingConfig.bucket)
 
   settee.getBucket().should.not.be.undefined
   settee.getStorage().should.be.instanceOf(Storage)
   settee.indexer.should.be.instanceOf(Indexer)
 
   // error
-  await settee.connect('192.168.99.100', 'invalid-bucket')
+  await settee.connect(testingConfig.cluster, 'invalid-bucket')
     .should.be.rejectedWith(SetteeError, /could not be established/)
 })
 
