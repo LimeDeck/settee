@@ -103,3 +103,46 @@ test.serial('common workflow with indexes', async () => {
   await Car.getStorage().dropIndex('Car#findByBrand')
   await Car.getStorage().dropIndex('Settee#docType')
 })
+
+test('common queries', async () => {
+  // We're in the market for a new car ...
+  const CarSchema = new Schema('Car', {
+    brand: Type.string(),
+    color: Type.string()
+  })
+
+  const Car = settee.registerSchema(CarSchema)
+
+  let bmw = Car.create({
+    brand: 'BMW',
+    color: 'blue'
+  })
+
+  let audi = await Car.create({
+    brand: 'Audi',
+    color: 'red'
+  })
+
+  // query builder is scoped to 'Car' docType
+  let queryBuilder = Car.q({
+    consistency: settee.consistency.REQUEST_PLUS
+  })
+
+  // get all cars
+  await queryBuilder.all()
+    .should.eventually.have.lengthOf(2)
+
+  // get the count of all cars
+  await queryBuilder.count()
+    .should.eventually.eq(2)
+
+  // let's get a BMW with the first() method
+  let retrievedBmw = await queryBuilder.where('brand', 'BMW').first()
+
+  retrievedBmw.brand.should.eq('BMW')
+  retrievedBmw.color.should.eq('blue')
+
+  // let's delete the entry
+  await retrievedBmw.delete()
+  await audi.delete()
+})
