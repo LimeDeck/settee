@@ -73,7 +73,7 @@ class QueryBuilder {
     /**
      * Provides all entries.
      *
-     * @param {string} fields
+     * @param {string|string[]} fields
      * @return {Promise<any[]>}
      */
     all(fields = '*') {
@@ -215,7 +215,7 @@ class QueryBuilder {
     /**
      * Returns the first entry from the get statement.
      *
-     * @param {string} fields
+     * @param {string|string[]} fields
      * @return {Promise<any[]>}
      */
     first(fields = '*') {
@@ -238,7 +238,7 @@ class QueryBuilder {
     /**
      * Executes a query.
      *
-     * @param {string} fields
+     * @param {string|string[]} fields
      * @return {Promise<any[]|number>}
      */
     get(fields = '*') {
@@ -266,7 +266,7 @@ class QueryBuilder {
      *
      * @param {number} perPage
      * @param {number} pageNumber
-     * @param {string} fields
+     * @param {string|string[]} fields
      * @return {Promise<{entries: null|Array<{}>, totalCount: number, perPage: number, pageNumber: number}>}
      */
     paginate(perPage = 15, pageNumber = 1, fields = '*') {
@@ -311,7 +311,7 @@ class QueryBuilder {
     /**
      * Builds a query and bindings depending on the arguments from wheres, ordersBys, offsets and limits.
      *
-     * @param {string} fields
+     * @param {string|string[]} fields
      * @return {{query: string, bindings: any}}
      */
     prepare(fields = '*') {
