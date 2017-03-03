@@ -205,7 +205,7 @@ test('it finds an entry by id', async () => {
     })
   }
 
-  let car = await Car.findById('Car::123')
+  let car = await Car.findById('123')
 
   car.should.be.instanceOf(Instance)
   car.color.should.eq('red')
@@ -213,7 +213,7 @@ test('it finds an entry by id', async () => {
   // error
   storage.get = (key) => Promise.reject(new StorageError('error', 123))
 
-  Car.findById('Car::123')
+  Car.findById('123')
     .should.be.rejectedWith(StorageError)
 })
 
