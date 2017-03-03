@@ -258,12 +258,22 @@ export default class QueryBuilder {
    * Returns the first entry from the get statement.
    *
    * @param {string|string[]} fields
-   * @return {Promise<any[]>}
+   * @return {Promise<any>}
    */
   public async first (fields: string = '*') {
     this.limit(1)
 
-    return this.get(fields)
+    return new Promise((resolve, reject) => {
+      this.get(fields)
+        .then(results => {
+          if (Array.isArray(results) && results.length > 0) {
+            resolve(results[0])
+          }
+
+          return reject(new SetteeError('Unable to get the entry.'))
+        })
+        .catch(err => reject(err))
+    })
   }
 
   /**

@@ -166,9 +166,9 @@ export default class QueryBuilder {
      * Returns the first entry from the get statement.
      *
      * @param {string|string[]} fields
-     * @return {Promise<any[]>}
+     * @return {Promise<any>}
      */
-    first(fields?: string): Promise<number | any[]>;
+    first(fields?: string): Promise<{}>;
     /**
      * Executes a count query.
      *

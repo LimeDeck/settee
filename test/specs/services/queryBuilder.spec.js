@@ -304,14 +304,38 @@ test('it supports limit clause', () => {
 })
 
 test('it aliases first to the limit 1 clause', async () => {
-  const query = 'SELECT * FROM `default` WHERE `amount` IS NOT NULL AND `docType` = $docType LIMIT 1'
-  const bindings = { docType: 'Foo' }
+  const qb = new QueryBuilder(StubStorage, 'Car', {
+    consistency: settee.consistency.REQUEST_PLUS,
+    model: StubModel
+  })
+
+  const query = 'SELECT * FROM `default` WHERE `color` IS NOT NULL AND `docType` = $docType LIMIT 1'
+  const bindings = { docType: 'Car' }
 
   td.when(
-    StubStorage.executeQuery(query, bindings, {})
+    StubStorage.executeQuery(query, bindings, td.matchers.anything())
+  ).thenResolve([{
+    docId: '123',
+    docType: 'Car',
+    color: 'red',
+    brand: 'BMW'
+  }])
+
+  await qb.whereNotNull('color').first()
+
+  // error qb.first()
+  td.when(
+    StubStorage.executeQuery(td.matchers.anything(), bindings, td.matchers.anything())
   ).thenResolve([])
 
-  await queryBuilder.whereNotNull('amount').first()
+  await qb.whereNotNull('color').first()
+    .should.be.rejectedWith(SetteeError, /Unable to get/)
+
+  // error qb.get()
+  qb.get = (fields) => Promise.reject(new StorageError('error'))
+
+  await qb.whereNotNull('color').first()
+    .should.be.rejectedWith(StorageError)
 })
 
 test('it only allows integers in limit clause', t => {
