@@ -40,6 +40,11 @@ class Validator {
                 throw new TypeError(`Field '${checkedField}' is not present in the schema.`);
             }
             let schemaEntry = layout[checkedField];
+            if (Array.isArray(checkedEntry) && this.isNestedLayout(schemaEntry)) {
+                checkedEntry.forEach(entry => {
+                    return this.checkAgainstSchema(entry, schemaEntry[0]);
+                });
+            }
             if (this.isNestedLayout(checkedEntry) && this.isNestedLayout(schemaEntry)) {
                 return this.checkAgainstSchema(checkedEntry, schemaEntry);
             }
@@ -107,7 +112,7 @@ class Validator {
      * @return {Layout}
      */
     getReferencedLayout(layout) {
-        return index_1.settee.registeredSchemas.get(layout.getDefaultValue().docType).layout;
+        return index_1.settee.registeredSchemas.get(layout.getDefaultValue().docType.toLowerCase());
     }
 }
 exports.default = Validator;

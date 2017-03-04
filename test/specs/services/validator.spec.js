@@ -41,6 +41,30 @@ test('it validates flat schema layout', t => {
   err.message.should.contain(`Field 'age' has invalid type`)
 })
 
+test('it validates schema layout with arrays', t => {
+  validator.checkSchema({
+    isActive: Type.boolean(),
+    permissions: [{
+      name: Type.string(),
+      slug: Type.string(),
+      description: Type.string()
+    }]
+  }).should.be.true
+
+  let err = t.throws(() => {
+    validator.checkSchema({
+      isActive: Type.boolean(),
+      permissions: [{
+        name: 'foobar',
+        slug: Type.string(),
+        description: Type.string()
+      }]
+    })
+  }, TypeError)
+
+  err.message.should.contain(`Field 'name' has invalid type`)
+})
+
 test('it validates nested schema layout', t => {
   validator.checkSchema({
     isActive: Type.boolean(),
@@ -75,7 +99,7 @@ test('it validates schema with referenced models on top level', t => {
     age: Type.integer()
   })
 
-  const Profile = settee.registerSchema(ProfileSchema)
+  const Profile = settee.buildModel(ProfileSchema)
 
   validator.checkSchema({
     isActive: Type.boolean(),
@@ -89,7 +113,7 @@ test('it disallows nested referenced models', t => {
     age: Type.integer()
   })
 
-  const Profile = settee.registerSchema(ProfileSchema)
+  const Profile = settee.buildModel(ProfileSchema)
 
   let err = t.throws(() => {
     validator.checkSchema({
@@ -123,6 +147,49 @@ test('it validates data against a flat schema', t => {
   }, TypeError)
 
   err.message.should.contain(`Field 'isActive' has invalid type`)
+})
+
+test('it validates data against a schema with arrays', t => {
+  const schemaLayout = {
+    isActive: Type.boolean(),
+    permissions: [{
+      name: Type.string(),
+      slug: Type.string(),
+      description: Type.string()
+    }]
+  }
+
+  validator.checkAgainstSchema({
+    isActive: true,
+    permissions: [
+      { name: 'Update', slug: 'update', description: 'Update entry' },
+      { name: 'Delete', slug: 'delete' }
+    ]
+  }, schemaLayout).should.be.true
+
+  let err = t.throws(() => {
+    validator.checkAgainstSchema({
+      isActive: true,
+      permissions: [
+        { name: 'Update', slug: 'update', description: 'Update entry' },
+        { name: 42 }
+      ]
+    }, schemaLayout)
+  }, TypeError)
+
+  err.message.should.contain(`Field 'name' has invalid type`)
+
+  err = t.throws(() => {
+    validator.checkAgainstSchema({
+      isActive: true,
+      permissions: [
+        { name: 'Update', slug: 'update', description: 'Update entry' },
+        { permName: 42 }
+      ]
+    }, schemaLayout)
+  }, TypeError)
+
+  err.message.should.contain(`Field 'permName' is not present in the schema`)
 })
 
 test('it validates data against a nested schema', t => {
@@ -169,7 +236,8 @@ test('it validates data against a schema with referenced models', t => {
     age: Type.integer()
   })
 
-  const Profile = settee.registerSchema(ProfileSchema)
+  const Profile = settee.buildModel(ProfileSchema)
+  settee.registerModels([Profile])
 
   const schemaLayout = {
     isActive: Type.boolean(),

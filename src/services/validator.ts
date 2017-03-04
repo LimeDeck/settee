@@ -51,6 +51,12 @@ export default class Validator {
 
       let schemaEntry = layout[checkedField]
 
+      if (Array.isArray(checkedEntry) && this.isNestedLayout(schemaEntry)) {
+        checkedEntry.forEach(entry => {
+          return this.checkAgainstSchema(entry, schemaEntry[0])
+        })
+      }
+
       if (this.isNestedLayout(checkedEntry) && this.isNestedLayout(schemaEntry)) {
         return this.checkAgainstSchema(checkedEntry, schemaEntry)
       }
@@ -130,7 +136,7 @@ export default class Validator {
    */
   protected getReferencedLayout (layout: any): Layout {
     return settee.registeredSchemas.get(
-      layout.getDefaultValue().docType
-    ).layout
+      layout.getDefaultValue().docType.toLowerCase()
+    )
   }
 }
