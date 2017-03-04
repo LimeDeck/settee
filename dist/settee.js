@@ -14,17 +14,19 @@ const errors_1 = require("./errors");
 const storage_1 = require("./storage");
 const indexer_1 = require("./indexes/indexer");
 const model_1 = require("./entities/model");
-const schemaContainer_1 = require("./services/schemaContainer");
 class Settee {
     /**
      * Settee constructor.
      */
     constructor() {
         /**
+         * Container for registered schemas.
+         */
+        this.registeredSchemas = new Map();
+        /**
          * Container for registered models.
          */
         this.registeredModels = new Map();
-        this.registeredSchemas = new schemaContainer_1.default();
         this.consistency = {
             NOT_BOUND: consistencies.NOT_BOUND,
             REQUEST_PLUS: consistencies.REQUEST_PLUS,
@@ -61,19 +63,19 @@ class Settee {
         return this.storage;
     }
     /**
-     * Registers a new schema.
+     * Provides a model based on the schema.
      *
      * @param {Schema} schema
      * @return {Model}
      */
-    registerSchema(schema) {
+    buildModel(schema) {
         if (!this.getStorage()) {
-            throw new errors_1.SetteeError(`You must call 'settee.useBucket(bucket)' before registering a schema.`);
+            throw new errors_1.SetteeError(`You must call 'settee.useBucket(bucket)' before building a model.`);
         }
         schema.useStorage(this.getStorage());
         this.indexer.addIndexes(schema);
         let model = model_1.default.fromSchema(schema);
-        this.registeredSchemas.add(schema, model);
+        this.registeredSchemas.set(schema.name.toLowerCase(), schema.layout);
         return model;
     }
     /**
@@ -147,7 +149,7 @@ class Settee {
             yield this.getStorage().disconnect();
             this.bucket = null;
             this.storage = null;
-            this.registeredSchemas = new schemaContainer_1.default();
+            this.registeredSchemas = new Map();
         });
     }
     /**

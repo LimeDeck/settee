@@ -151,7 +151,7 @@ export default class Instance {
         .then(async result => {
           try {
             for (let referenced of this.getReferencedModels()) {
-              let referencedModel = settee.registeredSchemas.getModel(referenced.model)
+              let referencedModel = settee.getModel(referenced.model)
 
               let id = get(this.getData(), `${referenced.pathToModel}.docId`)
 

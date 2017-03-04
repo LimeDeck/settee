@@ -24,7 +24,7 @@ test.serial('common workflow without indexes and custom model or instance method
   })
 
   // ... after the connection has been established ...
-  const Car = settee.registerSchema(CarSchema)
+  const Car = settee.buildModel(CarSchema)
 
   // ... we buy a red Audi
   let audi = await Car.create({
@@ -71,7 +71,7 @@ test.serial('common workflow with indexes', async () => {
   })
 
   // ... after the connection has been established ...
-  const Car = settee.registerSchema(CarSchema)
+  const Car = settee.buildModel(CarSchema)
 
   // ... we ensure that the indexes are ready ...
   await settee.buildIndexes()
@@ -111,7 +111,7 @@ test('common queries', async () => {
     color: Type.string()
   })
 
-  const Car = settee.registerSchema(CarSchema)
+  const Car = settee.buildModel(CarSchema)
 
   let bmw = Car.create({
     brand: 'BMW',
@@ -153,7 +153,7 @@ test('simple access to models', () => {
     color: Type.string()
   })
 
-  const Car = settee.registerSchema(CarSchema)
+  const Car = settee.buildModel(CarSchema)
 
   // We register the models with settee ...
   settee.registerModels([Car])

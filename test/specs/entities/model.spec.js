@@ -26,7 +26,9 @@ test.beforeEach.cb(t => {
       storage.insert = (key, data) => Promise.resolve({ cas: 123 })
       settee.storage = storage
 
-      Car = settee.registerSchema(CarSchema)
+      Car = settee.buildModel(CarSchema)
+
+      settee.registerModels([Car])
 
       t.end()
     })
@@ -119,7 +121,8 @@ test.serial('it creates referenced models while creating the main one', async ()
     power: Type.number()
   })
 
-  const Engine = settee.registerSchema(EngineSchema)
+  const Engine = settee.buildModel(EngineSchema)
+  settee.registerModels([Engine])
 
   const BikeSchema = new Schema('Bike', {
     brand: Type.string(),
@@ -127,7 +130,7 @@ test.serial('it creates referenced models while creating the main one', async ()
     engine: Type.reference(Engine)
   })
 
-  const Bike = settee.registerSchema(BikeSchema)
+  const Bike = settee.buildModel(BikeSchema)
 
   const honda = await Bike.create({
     brand: 'Honda',

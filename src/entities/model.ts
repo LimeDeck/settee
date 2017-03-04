@@ -150,7 +150,7 @@ export default class Model {
       // TODO: refactor
       try {
         for (let referenced of instance.getReferencedModels()) {
-          let referencedModel = settee.registeredSchemas.getModel(referenced.model)
+          let referencedModel = settee.getModel(referenced.model)
           let referencedInstance = await referencedModel.create(referenced.data)
 
           set(instance, `${referenced.pathToModel}.docId`, referencedInstance.getId())

@@ -19,7 +19,7 @@ test.beforeEach.cb(t => {
         power: Type.integer(100)
       })
 
-      Engine = settee.registerSchema(EngineSchema)
+      Engine = settee.buildModel(EngineSchema)
 
       const CarSchema = new Schema('Car', {
         brand: Type.string(),
@@ -32,7 +32,9 @@ test.beforeEach.cb(t => {
         }
       })
 
-      Car = settee.registerSchema(CarSchema)
+      Car = settee.buildModel(CarSchema)
+
+      settee.registerModels([Car, Engine])
 
       StubStorage = td.object(Storage)
       Car.storage = StubStorage

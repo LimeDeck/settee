@@ -6,14 +6,13 @@ import Storage from './storage'
 import Indexer from './indexes/indexer'
 import Model from './entities/model'
 import Schema from './entities/schema'
-import SchemaContainer from './services/schemaContainer'
-import { Bucket } from './typings'
+import { Bucket, Layout } from './typings'
 
 export default class Settee {
   /**
    * Container for registered schemas.
    */
-  public registeredSchemas: SchemaContainer
+  public registeredSchemas: Map<string, Layout> = new Map()
 
   /**
    * Container for registered models.
@@ -48,8 +47,6 @@ export default class Settee {
    * Settee constructor.
    */
   constructor () {
-    this.registeredSchemas = new SchemaContainer()
-
     this.consistency = {
       NOT_BOUND: consistencies.NOT_BOUND,
       REQUEST_PLUS: consistencies.REQUEST_PLUS,
@@ -91,14 +88,14 @@ export default class Settee {
   }
 
   /**
-   * Registers a new schema.
+   * Provides a model based on the schema.
    *
    * @param {Schema} schema
    * @return {Model}
    */
-  public registerSchema (schema: Schema): Model {
+  public buildModel (schema: Schema): Model {
     if (!this.getStorage()) {
-      throw new SetteeError(`You must call 'settee.useBucket(bucket)' before registering a schema.`)
+      throw new SetteeError(`You must call 'settee.useBucket(bucket)' before building a model.`)
     }
 
     schema.useStorage(this.getStorage())
@@ -107,7 +104,7 @@ export default class Settee {
 
     let model = Model.fromSchema(schema)
 
-    this.registeredSchemas.add(schema, model)
+    this.registeredSchemas.set(schema.name.toLowerCase(), schema.layout)
 
     return model
   }
@@ -189,7 +186,7 @@ export default class Settee {
     await this.getStorage().disconnect()
     this.bucket = null
     this.storage = null
-    this.registeredSchemas = new SchemaContainer()
+    this.registeredSchemas = new Map()
   }
 
   /**

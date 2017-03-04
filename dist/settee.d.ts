@@ -2,13 +2,12 @@ import Storage from './storage';
 import Indexer from './indexes/indexer';
 import Model from './entities/model';
 import Schema from './entities/schema';
-import SchemaContainer from './services/schemaContainer';
-import { Bucket } from './typings';
+import { Bucket, Layout } from './typings';
 export default class Settee {
     /**
      * Container for registered schemas.
      */
-    registeredSchemas: SchemaContainer;
+    registeredSchemas: Map<string, Layout>;
     /**
      * Container for registered models.
      */
@@ -56,12 +55,12 @@ export default class Settee {
      */
     getStorage(): Storage;
     /**
-     * Registers a new schema.
+     * Provides a model based on the schema.
      *
      * @param {Schema} schema
      * @return {Model}
      */
-    registerSchema(schema: Schema): Model;
+    buildModel(schema: Schema): Model;
     /**
      * Registers a set of provided models.
      *

@@ -33,15 +33,6 @@ export declare type Layout = {
   [key: string]: Type|Layout,
 }
 
-export declare type RegisteredSchema = {
-  model: Model,
-  layout: Layout
-}
-
-export declare type RegisteredSchemas = {
-  [key: string]: RegisteredSchema
-}
-
 export declare type ReferencedModels = Array<{
   data: any,
   model: string,

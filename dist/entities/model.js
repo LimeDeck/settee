@@ -111,7 +111,7 @@ class Model {
                 // TODO: refactor
                 try {
                     for (let referenced of instance.getReferencedModels()) {
-                        let referencedModel = index_1.settee.registeredSchemas.getModel(referenced.model);
+                        let referencedModel = index_1.settee.getModel(referenced.model);
                         let referencedInstance = yield referencedModel.create(referenced.data);
                         lodash_1.set(instance, `${referenced.pathToModel}.docId`, referencedInstance.getId());
                         referencedInstances.push({

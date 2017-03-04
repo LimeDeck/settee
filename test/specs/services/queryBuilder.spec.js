@@ -22,7 +22,7 @@ test.before.cb(t => {
       color: Type.string()
     })
 
-    Car = settee.registerSchema(CarSchema)
+    Car = settee.buildModel(CarSchema)
 
     t.end()
   })

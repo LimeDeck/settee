@@ -131,7 +131,7 @@ class Instance {
                     .then((result) => __awaiter(this, void 0, void 0, function* () {
                     try {
                         for (let referenced of this.getReferencedModels()) {
-                            let referencedModel = index_1.settee.registeredSchemas.getModel(referenced.model);
+                            let referencedModel = index_1.settee.getModel(referenced.model);
                             let id = lodash_1.get(this.getData(), `${referenced.pathToModel}.docId`);
                             /* istanbul ignore else */
                             if (typeof id === 'string') {

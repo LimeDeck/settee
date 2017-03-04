@@ -10,7 +10,7 @@
     "preserveConstEnums": true,
     "sourceMap": false,
     "outDir": "dist",
-    "lib": ["es2016", "dom"]
+    "lib": ["es2016", "dom", "dom.iterable"]
   },
   "include": [
     "src/**/*"

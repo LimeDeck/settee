@@ -52,7 +52,7 @@ test('it sets an active bucket and creates storage with indexer', t => {
 })
 
 test.cb('it registers a schema', t => {
-  t.plan(3)
+  t.plan(2)
 
   settee.useBucket(bucket)
 
@@ -61,24 +61,20 @@ test.cb('it registers a schema', t => {
     t.pass()
   }
 
-  settee.registeredSchemas.add = (schema, model) => {
-    t.pass()
-  }
-
   const CarSchema = new Schema('Car', {
     brand: Type.string()
   })
 
-  settee.registerSchema(CarSchema)
+  settee.buildModel(CarSchema)
     .should.be.instanceOf(Model)
 
   // errors
   settee.storage = null
   const err = t.throws(() => {
-    settee.registerSchema(CarSchema)
+    settee.buildModel(CarSchema)
   }, SetteeError)
 
-  err.message.should.contain('before registering a schema')
+  err.message.should.contain('before building a model')
 
   t.end()
 })
@@ -90,13 +86,13 @@ test('it registers a set of models', t => {
     brand: Type.string()
   })
 
-  const Car = settee.registerSchema(CarSchema)
+  const Car = settee.buildModel(CarSchema)
 
   const EngineSchema = new Schema('Engine', {
     brand: Type.number(150)
   })
 
-  const Engine = settee.registerSchema(EngineSchema)
+  const Engine = settee.buildModel(EngineSchema)
 
   settee.registerModels([
     Car, Engine
