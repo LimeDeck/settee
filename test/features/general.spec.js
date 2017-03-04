@@ -146,3 +146,21 @@ test('common queries', async () => {
   await retrievedBmw.delete()
   await audi.delete()
 })
+
+test('simple access to models', () => {
+  const CarSchema = new Schema('Car', {
+    brand: Type.string(),
+    color: Type.string()
+  })
+
+  const Car = settee.registerSchema(CarSchema)
+
+  // We register the models with settee ...
+  settee.registerModels([Car])
+
+  // ... and we can easily access them across different files.
+  const resolvedCar = settee.getModel('Car')
+
+  // It's the same model ...
+  resolvedCar.should.deep.eq(Car)
+})

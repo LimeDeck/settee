@@ -10,6 +10,10 @@ export default class Settee {
      */
     registeredSchemas: SchemaContainer;
     /**
+     * Container for registered models.
+     */
+    registeredModels: Map<string, Model>;
+    /**
      * Available consistencies for Couchbase storage actions.
      */
     consistency: {
@@ -58,6 +62,19 @@ export default class Settee {
      * @return {Model}
      */
     registerSchema(schema: Schema): Model;
+    /**
+     * Registers a set of provided models.
+     *
+     * @param {Model[]} models
+     */
+    registerModels(models: Model[]): void;
+    /**
+     * Provides a registered model.
+     *
+     * @param {string} name
+     * @return {Model}
+     */
+    getModel(name: string): Model;
     /**
      * Builds deferred indexes.
      *

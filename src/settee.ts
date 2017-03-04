@@ -16,6 +16,11 @@ export default class Settee {
   public registeredSchemas: SchemaContainer
 
   /**
+   * Container for registered models.
+   */
+  public registeredModels: Map<string, Model> = new Map()
+
+  /**
    * Available consistencies for Couchbase storage actions.
    */
   public consistency: {
@@ -105,6 +110,31 @@ export default class Settee {
     this.registeredSchemas.add(schema, model)
 
     return model
+  }
+
+  /**
+   * Registers a set of provided models.
+   *
+   * @param {Model[]} models
+   */
+  public registerModels (models: Model[]): void {
+    models.forEach(model => {
+      this.registeredModels.set(model.name.toLowerCase(), model)
+    })
+  }
+
+  /**
+   * Provides a registered model.
+   *
+   * @param {string} name
+   * @return {Model}
+   */
+  public getModel (name: string): Model {
+    if (!this.registeredModels.has(name.toLowerCase())) {
+      throw new SetteeError(`Model '${name}' is not available.`)
+    }
+
+    return this.registeredModels.get(name.toLowerCase())
   }
 
   /**

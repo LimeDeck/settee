@@ -20,6 +20,10 @@ class Settee {
      * Settee constructor.
      */
     constructor() {
+        /**
+         * Container for registered models.
+         */
+        this.registeredModels = new Map();
         this.registeredSchemas = new schemaContainer_1.default();
         this.consistency = {
             NOT_BOUND: consistencies.NOT_BOUND,
@@ -71,6 +75,28 @@ class Settee {
         let model = model_1.default.fromSchema(schema);
         this.registeredSchemas.add(schema, model);
         return model;
+    }
+    /**
+     * Registers a set of provided models.
+     *
+     * @param {Model[]} models
+     */
+    registerModels(models) {
+        models.forEach(model => {
+            this.registeredModels.set(model.name.toLowerCase(), model);
+        });
+    }
+    /**
+     * Provides a registered model.
+     *
+     * @param {string} name
+     * @return {Model}
+     */
+    getModel(name) {
+        if (!this.registeredModels.has(name.toLowerCase())) {
+            throw new errors_1.SetteeError(`Model '${name}' is not available.`);
+        }
+        return this.registeredModels.get(name.toLowerCase());
     }
     /**
      * Builds deferred indexes.

@@ -83,6 +83,39 @@ test.cb('it registers a schema', t => {
   t.end()
 })
 
+test('it registers a set of models', t => {
+  settee.useBucket(bucket)
+
+  const CarSchema = new Schema('Car', {
+    brand: Type.string()
+  })
+
+  const Car = settee.registerSchema(CarSchema)
+
+  const EngineSchema = new Schema('Engine', {
+    brand: Type.number(150)
+  })
+
+  const Engine = settee.registerSchema(EngineSchema)
+
+  settee.registerModels([
+    Car, Engine
+  ])
+
+  settee.getModel('Car')
+    .should.deep.eq(Car)
+
+  settee.getModel('Engine')
+    .should.deep.eq(Engine)
+
+  // error
+  const err = t.throws(() => {
+    settee.getModel('Missing')
+  }, SetteeError)
+
+  err.message.should.contain(`Model 'Missing' is not available.`)
+})
+
 test('it builds deferred indexes', async () => {
   settee.useBucket(bucket)
 
