@@ -52,7 +52,7 @@ test('it provides the active storage', () => {
 
 test('it allows for extensibility', () => {
   Car.addMethods({
-    reverseName: function () {
+    reverseName () {
       return this.name.split('').reverse().join('')
     }
   })
@@ -63,7 +63,7 @@ test('it allows for extensibility', () => {
 test('it disallows overwriting of the default methods', t => {
   const err = t.throws(() => {
     Car.addMethods({
-      create: function () {
+      create () {
         return 'foo'
       }
     })
@@ -88,7 +88,7 @@ test('it creates a new model instance', async () => {
 
 test('it manages additional methods forwarded to the model instance', async () => {
   Car.addInstanceMethods({
-    getUppercaseBrand: function () {
+    getUppercaseBrand () {
       return this.brand.toUpperCase()
     }
   })
@@ -101,7 +101,7 @@ test('it manages additional methods forwarded to the model instance', async () =
 test('it disallows overwriting of the default instance methods', t => {
   const err = t.throws(() => {
     Car.addInstanceMethods({
-      save: function () {
+      save () {
         return 'foo'
       }
     })
@@ -122,7 +122,6 @@ test.serial('it creates referenced models while creating the main one', async ()
   })
 
   const Engine = settee.buildModel(EngineSchema)
-  settee.registerModels([Engine])
 
   const BikeSchema = new Schema('Bike', {
     brand: Type.string(),
@@ -131,6 +130,7 @@ test.serial('it creates referenced models while creating the main one', async ()
   })
 
   const Bike = settee.buildModel(BikeSchema)
+  settee.registerModels([Engine, Bike])
 
   const honda = await Bike.create({
     brand: 'Honda',

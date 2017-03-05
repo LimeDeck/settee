@@ -30,7 +30,7 @@ export declare type Methods = {
 }
 
 export declare type Layout = {
-  [key: string]: Type|Layout,
+  [key: string]: Type|Layout|Layout[]
 }
 
 export declare type ReferencedModels = Array<{

@@ -104,7 +104,7 @@ test.serial('common workflow with indexes', async () => {
   await Car.getStorage().dropIndex('Settee#docType')
 })
 
-test('common queries', async () => {
+test.serial('common queries', async () => {
   // We're in the market for a new car ...
   const CarSchema = new Schema('Car', {
     brand: Type.string(),
@@ -147,7 +147,7 @@ test('common queries', async () => {
   await audi.delete()
 })
 
-test('simple access to models', () => {
+test.serial('simple access to models', () => {
   const CarSchema = new Schema('Car', {
     brand: Type.string(),
     color: Type.string()
@@ -163,4 +163,50 @@ test('simple access to models', () => {
 
   // It's the same model ...
   resolvedCar.should.deep.eq(Car)
+})
+
+test.serial('workflow with referenced models', async () => {
+  // Create our Engine Schema first.
+  const EngineSchema = new Schema('Engine', {
+    make: Type.string(),
+    power: Type.number()
+  })
+
+  const Engine = settee.buildModel(EngineSchema)
+
+  // we define the Engine as Type.reference(Engine)
+  const CarSchema = new Schema('Car', {
+    brand: Type.string(),
+    topSpeed: Type.number(),
+    taxPaid: Type.boolean(),
+    engine: Type.reference(Engine)
+  })
+
+  const Car = settee.buildModel(CarSchema)
+
+  settee.registerModels([Car, Engine])
+
+  let bmw = await Car.create({
+    brand: 'BMW',
+    engine: {
+      power: 150,
+      make: 'Bayerische Motoren Werke AG'
+    }
+  })
+
+  // you can now access the engine directly
+  bmw.brand.should.eq('BMW')
+  bmw.engine.power.should.eq(150)
+  bmw.engine.make.should.eq('Bayerische Motoren Werke AG')
+
+  // and you can also update the engine individually
+  bmw.engine.power = 200
+
+  await bmw.engine.save()
+
+  let resolvedEngine = await Engine.findById(bmw.engine.getId())
+
+  resolvedEngine.power.should.eq(200)
+
+  await bmw.delete()
 })
