@@ -1,0 +1,7 @@
+.editorconfig
+.idea/
+.test/
+tsconfig.json
+tsconfig.npm.json
+tslint.json
+src/

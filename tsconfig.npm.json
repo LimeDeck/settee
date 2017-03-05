@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "target": "ES6",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "removeComments": false,
+    "preserveConstEnums": true,
+    "sourceMap": false,
+    "outDir": "dist",
+    "lib": ["es2016", "dom", "dom.iterable"]
+  },
+  "include": [
+    "src/**/*"
+  ]
+}
