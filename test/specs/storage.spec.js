@@ -307,11 +307,17 @@ test.serial('it builds deferred indexes', async () => {
   await storage.buildDeferredIndexes()
     .should.eventually.be.true
 
-  indexes = (await storage.getIndexes(options))
+  // Travis is way too slow
+  await new Promise(resolve => {
+    setTimeout(() => {
+      resolve()
+    }, 10000)
+  })
+
+  indexes = await storage.getIndexes(options)
+
   index = indexes.find(index => {
-    return setTimeout(() => {
-      return index.name === 'findByPower'
-    }, 5000)
+    return index.name === 'findByPower'
   })
 
   index.state.should.eq('online')
