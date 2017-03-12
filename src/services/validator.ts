@@ -1,142 +1,96 @@
-import Type from '../entities/type'
-import { settee } from '../index'
-import { Layout } from '../typings'
+import { ObjectSchema } from 'joi'
+const moment = require('moment')
+const OriginalJoi = require('joi')
+import Instance from '../entities/instance'
+import SetteeError from '../errors/setteeError'
+
+// Ensure that moment treats invalid date as truly invalid date
+// without the annoying deprecation warning.
+/* istanbul ignore next */
+moment.createFromInputFallback = config => {
+  config._d = new Date(NaN)
+}
 
 export default class Validator {
   /**
-   * Checks layout of the schema recursively.
+   * Checks the provided object schema.
    *
-   * @param {Layout} layout
-   * @param {boolean} isTopLevel
+   * @param {any} layout
    * @return {boolean}
    */
-  public checkSchema (layout: Layout, isTopLevel: boolean = true): boolean {
-    for (let field in layout) {
-      let entry = layout[field]
-
-      if (this.isValidType(entry, isTopLevel)) {
-        continue
-      }
-
-      if (this.isNestedLayout(entry)) {
-        return this.checkSchema(entry, false)
-      }
-
-      throw new TypeError(`Field '${field}' has invalid type.`)
+  public checkSchema (layout: any): boolean {
+    if (layout.hasOwnProperty('isJoi')) {
+      return layout.isJoi
     }
 
-    return true
+    throw new SetteeError('Schema is not valid.')
   }
 
   /**
-   * Checks data agains the provided schema recursively.
+   * Checks data agains the provided schema.
    *
    * @param {Object} data
-   * @param {Layout} layout
+   * @param {ObjectSchema} layout
    * @return {boolean}
    */
-  public checkAgainstSchema (data: {}, layout: Layout): boolean {
-    for (let checkedField in data) {
-      let checkedEntry = data[checkedField]
+  public checkAgainstSchema (data: {}, layout: ObjectSchema): boolean {
+    this.checkSchema(layout)
 
-      if (this.isReferenceType(layout)) {
-        layout = this.getReferencedLayout(layout)
-      }
+    const result = Joi.validate(data, layout)
 
-      if (!layout.hasOwnProperty(checkedField)) {
-        throw new TypeError(
-          `Field '${checkedField}' is not present in the schema.`
-        )
-      }
+    if (result.error) {
+      let originalMessage = result.error.details[0].message
 
-      let schemaEntry = layout[checkedField]
-
-      if (Array.isArray(checkedEntry) && this.isNestedLayout(schemaEntry)) {
-        checkedEntry.forEach(entry => {
-          return this.checkAgainstSchema(entry, schemaEntry[0])
-        })
-      }
-
-      if (this.isNestedLayout(checkedEntry) && this.isNestedLayout(schemaEntry)) {
-        return this.checkAgainstSchema(checkedEntry, schemaEntry)
-      }
-
-      try {
-        /* istanbul ignore else */
-        if (schemaEntry instanceof Type) {
-          schemaEntry.check(checkedEntry)
-        } else {
-          throw new Error()
-        }
-      } catch (err) {
-        throw new TypeError(
-          `Field '${checkedField}' has invalid type.`
-        )
-      }
-    }
-
-    return true
-  }
-
-  /**
-   * Checks if the schema entry is of valid type.
-   *
-   * @param {any|Type} entry
-   * @param {boolean} isTopLevel
-   * @return {boolean}
-   */
-  protected isValidType (entry: any, isTopLevel: boolean): boolean {
-    let validType = entry instanceof Type
-
-    if (validType && this.hasNestedReference(entry, isTopLevel)) {
       throw new TypeError(
-        'Referenced models must be used only on the top level'
+        `Field ${originalMessage.replace(/"/g, '\'')}.`
       )
     }
 
-    return validType
-  }
-
-  /**
-   * Checks if the layout entry is a referenced layout.
-   *
-   * @param {Layout} layout
-   * @return {boolean}
-   */
-  protected isReferenceType (layout: Layout): boolean {
-    return layout instanceof Type && layout.getType() === 'reference'
-  }
-
-  /**
-   * Checks if the provided entry is a nested layout.
-   *
-   * @param {any} entry
-   * @return {boolean}
-   */
-  protected isNestedLayout (entry: any): entry is Layout {
-    return typeof entry === 'object'
-  }
-
-  /**
-   * Checks if the schema layout has a nested reference.
-   *
-   * @param {Type} entry
-   * @param {boolean} isTopLevel
-   * @return {boolean}
-   */
-  protected hasNestedReference (entry: Type, isTopLevel: boolean): boolean {
-    return entry.getType() === 'reference' && !isTopLevel
-  }
-
-  /**
-   * Provides the referenced layout.
-   *
-   * @param {Object} layout
-   * @return {Layout}
-   */
-  protected getReferencedLayout (layout: any): Layout {
-    return settee.registeredSchemas.get(
-      layout.getDefaultValue().docType.toLowerCase()
-    )
+    return result.value
   }
 }
+
+export const Joi = OriginalJoi.extend([
+  {
+    base: OriginalJoi.any(),
+    name: 'momentdate',
+    language: {
+      valid: 'must be a valid momentjs instance'
+    },
+    rules: [
+      {
+        name: 'valid',
+        validate(params, value, state, options) {
+          if (!moment.isMoment(value)) {
+            value = moment.utc(value)
+          }
+
+          if (!value.isValid()) {
+            return this.createError('momentdate.valid', { v: value, q: params.q }, state, options)
+          }
+
+          return value
+        }
+      }
+    ]
+  },
+  {
+    base: OriginalJoi.any(),
+    name: 'reference',
+    language: {
+      valid: 'must be a valid model instance'
+    },
+    rules: [
+      {
+        name: 'valid',
+        validate(params, value, state, options) {
+          if (value instanceof Instance) {
+            return value
+          }
+
+          return this.createError('reference.valid', { v: value, q: params.q }, state, options)
+        }
+      }
+    ]
+  }
+])

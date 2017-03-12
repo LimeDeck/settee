@@ -8,7 +8,7 @@ import { StorageError } from '../../../.test/build/errors'
 import Storage from '../../../.test/build/storage'
 import Instance from '../../../.test/build/entities/instance'
 
-let Car, Engine, StubStorage
+let Car, Engine, Wheel, StubStorage
 
 test.beforeEach.cb(t => {
   connect()
@@ -21,14 +21,23 @@ test.beforeEach.cb(t => {
 
       Engine = settee.buildModel(EngineSchema)
 
+      const WheelSchema = new Schema('Wheel', {
+        brand: Type.string()
+      })
+
+      Wheel = settee.buildModel(WheelSchema)
+
       const CarSchema = new Schema('Car', {
         brand: Type.string(),
         color: Type.string(),
         taxPaid: Type.boolean(false),
         engine: Type.reference(Engine),
-        wheels: {
-          color: Type.string(),
-          size: Type.integer()
+        wheels: Type.array(Type.object({
+          wheelType: Type.reference(Wheel)
+        })),
+        transmission: {
+          brand: Type.string(),
+          gearsCount: Type.integer()
         }
       })
 
@@ -39,6 +48,10 @@ test.beforeEach.cb(t => {
       StubStorage = td.object(Storage)
       Car.storage = StubStorage
       Engine.storage = Object.assign({}, StubStorage)
+
+      Car.storage.insert = (key, data) => {
+        return Promise.resolve({ cas: 'cas' })
+      }
 
       t.end()
     })
@@ -111,11 +124,9 @@ test('it adds methods to the instance', () => {
   car.hasPaidTax().should.be.true
 })
 
-test('it saves changed data', async () => {
+test('it saves changed data', async t => {
   Car.storage.replace = (key, data, options) => {
-    key.should.eq('Car::123')
     data.should.include({
-      docId: '123',
       docType: 'Car',
       brand: 'Audi'
     })
@@ -123,13 +134,15 @@ test('it saves changed data', async () => {
     return Promise.resolve({})
   }
 
-  let car = new Instance('Car::123', {
-    docId: '123',
-    docType: 'Car',
-    brand: 'BMW'
-  }, null, Car)
+  let car = await Car.create({
+    brand: 'BMW',
+    transmission: {
+      gearsCount: 6
+    }
+  })
 
   car.brand = 'Audi'
+  t.is(car.engine.getId(), null)
 
   car.isDirty().should.be.true
   await car.save().should.eventually.be.true
@@ -137,7 +150,7 @@ test('it saves changed data', async () => {
 
   // errors
   car.brand = false
-  car.save().should.be.rejectedWith(TypeError, /'brand' has invalid type/)
+  car.save().should.be.rejectedWith(TypeError, /Field 'brand' must be a string/)
 
   Car.storage.replace = (key, data, options) => Promise.reject(new StorageError('error', 123))
 
@@ -146,15 +159,35 @@ test('it saves changed data', async () => {
 })
 
 test('it will not save if the instance has not been changed, but it does not change the behaviour', async () => {
-  let car = new Instance('Car::123', {
-    docId: '123',
-    docType: 'Car',
+  let car = await Car.create({
     brand: 'BMW'
-  }, null, Car)
+  })
 
   car.isDirty().should.be.false
 
   await car.save().should.eventually.be.true
+})
+
+test('it handles array references', async () => {
+  const michelin = new Instance('Wheel::123', {
+    docId: '123',
+    docType: 'Wheel',
+    brand: 'Michelin'
+  }, null, Wheel)
+
+  let car = new Instance('Car::123', {
+    docId: '123',
+    docType: 'Car',
+    brand: 'BMW',
+    wheels: [
+      { wheelType: michelin },
+      { wheelType: michelin },
+      { wheelType: michelin },
+      { wheelType: michelin }
+    ]
+  }, null, Car)
+
+  car.wheels.should.have.lengthOf(4)
 })
 
 test('it deletes the entry in the Couchbase', async () => {
@@ -180,13 +213,7 @@ test('it deletes the entry in the Couchbase', async () => {
 
 test('it deletes the referenced entries with the main', async () => {
   Car.storage.remove = (key, options) => {
-    key.should.eq('Car::123')
-
-    return Promise.resolve({})
-  }
-
-  Engine.deleteById = (id) => {
-    id.should.eq('456')
+    ['Car::123', 'Engine::456'].should.include(key)
 
     return Promise.resolve({})
   }
@@ -207,7 +234,13 @@ test('it deletes the referenced entries with the main', async () => {
   await car.delete().should.eventually.be.true
 
   // error
-  Engine.deleteById = id => Promise.reject(new StorageError('error', 123))
+  Car.storage.remove = (key, options) => {
+    if (key === 'Engine::456') {
+      return Promise.reject(new StorageError('error', 123))
+    }
+
+    return Promise.resolve({})
+  }
 
   car.delete().should.be.rejectedWith(StorageError)
 })

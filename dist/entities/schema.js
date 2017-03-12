@@ -27,10 +27,10 @@ class Schema {
         this.validator = new validator_1.default();
         this.name = name;
         // add the default fields to the schema layout
-        this.layout = Object.assign(layout, {
+        this.layout = index_1.Type.object(Object.assign(layout, {
             docId: index_1.Type.string(),
             docType: index_1.Type.string()
-        });
+        }));
         this.validator.checkSchema(this.layout);
     }
     /**

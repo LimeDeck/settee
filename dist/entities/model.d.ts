@@ -3,7 +3,8 @@ import Instance from './instance';
 import QueryBuilder from '../services/queryBuilder';
 import Schema from './schema';
 import Validator from '../services/validator';
-import { Layout, Methods, ModelObject } from '../typings';
+import { Methods, ModelObject } from '../typings';
+import { ObjectSchema } from 'joi';
 export default class Model {
     /**
      * Creates a new model from schema.
@@ -19,7 +20,7 @@ export default class Model {
     /**
      * Layout of the schema.
      */
-    layout: Layout;
+    layout: ObjectSchema;
     /**
      * Active storage instance.
      */

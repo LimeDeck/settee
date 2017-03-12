@@ -1,65 +1,86 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const moment = require('moment');
-// Ensure that moment treats invalid date as truly invalid date
-// without the annoying deprecation warning.
-moment.createFromInputFallback = config => {
-    config._d = new Date(NaN);
-};
+const validator_1 = require("../services/validator");
+const instance_1 = require("./instance");
 class Type {
     /**
      * Boolean entry type.
      *
      * @param {null|boolean|function} defaultValue
-     * @return {Type}
+     * @param {string} Optional callbackName
+     * @return {BooleanSchema}
      */
-    static boolean(defaultValue = null) {
-        return new Type('boolean', defaultValue);
+    static boolean(defaultValue = null, callbackName) {
+        return validator_1.Joi.boolean().allow(null)
+            .default(defaultValue, callbackName);
     }
     /**
      * String entry type.
      *
      * @param {null|string|function} defaultValue
-     * @return {Type}
+     * @param {string} Optional callbackName
+     * @return {StringSchema}
      */
-    static string(defaultValue = null) {
-        return new Type('string', defaultValue);
+    static string(defaultValue = null, callbackName) {
+        return validator_1.Joi.string().allow(null)
+            .default(defaultValue, callbackName);
     }
     /**
      * Integer entry type.
      *
      * @param {null|number|function} defaultValue
-     * @return {Type}
+     * @param {string} Optional callbackName
+     * @return {NumberSchema}
      */
-    static integer(defaultValue = null) {
-        return new Type('integer', defaultValue);
+    static integer(defaultValue = null, callbackName) {
+        return validator_1.Joi.number().integer().allow(null)
+            .default(defaultValue, callbackName);
     }
     /**
      * Number entry type.
      *
      * @param {null|number|function} defaultValue
-     * @return {Type}
+     * @param {string} Optional callbackName
+     * @return {NumberSchema}
      */
-    static number(defaultValue = null) {
-        return new Type('number', defaultValue);
+    static number(defaultValue = null, callbackName) {
+        return validator_1.Joi.number().allow(null)
+            .default(defaultValue, callbackName);
     }
     /**
      * Date entry type.
      *
      * @param {null|number|string|Moment|function} defaultValue
-     * @return {Type}
+     * @param {string} Optional callbackName
+     * @return {DateSchema}
      */
-    static date(defaultValue = null) {
-        return new Type('date', defaultValue);
+    static date(defaultValue = null, callbackName) {
+        return validator_1.Joi.momentdate().valid().allow(null)
+            .default(defaultValue, callbackName);
+    }
+    /**
+     * Object entry type.
+     *
+     * @param {Object} schema
+     * @param {Object|Function} defaultValue
+     * @param {string} Optional callbackName
+     * @return {ObjectSchema}
+     */
+    static object(schema, defaultValue = null, callbackName) {
+        return validator_1.Joi.object().keys(schema).allow(null)
+            .default(defaultValue, callbackName);
     }
     /**
      * Array entry type.
      *
+     * @param {Type} itemType
      * @param {Array} defaultValue
+     * @param {string} Optional callbackName
      * @return {Type}
      */
-    static array(defaultValue = []) {
-        return new Type('array', defaultValue);
+    static array(itemType, defaultValue = [], callbackName) {
+        return validator_1.Joi.array().items(itemType)
+            .default(defaultValue, callbackName);
     }
     /**
      * Reference entry type.
@@ -68,113 +89,12 @@ class Type {
      * @return {Type}
      */
     static reference(model) {
-        return new Type('reference', {
+        return validator_1.Joi.reference().valid()
+            .default(new instance_1.default(null, {
             $type: 'reference',
-            docType: model.name,
-            docId: null
-        });
-    }
-    /**
-     * Type constructor.
-     *
-     * @param {string} type
-     * @param {null|boolean|number|string|Moment|function} defaultValue
-     */
-    constructor(type, defaultValue) {
-        this.type = type;
-        this.defaultValue = defaultValue;
-        this.guardAgainstInvalidValue(this.getDefaultValue());
-    }
-    /**
-     * Provides the type of the entry.
-     *
-     * @return {string}
-     */
-    getType() {
-        return this.type;
-    }
-    /**
-     * Provides the default value for the type.
-     *
-     * @return {null|boolean|number|string|Moment|function}
-     */
-    getDefaultValue() {
-        let value = this.defaultValue;
-        if (typeof value === 'function') {
-            value = this.defaultValue();
-        }
-        if (this.type === 'date') {
-            value = this.convertDateToMoment(value);
-        }
-        return value;
-    }
-    /**
-     * Checks the provided value for the type.
-     *
-     * @param {any} value
-     * @return {boolean}
-     */
-    check(value) {
-        if (this.type === 'date') {
-            value = this.convertDateToMoment(value);
-        }
-        return this.guardAgainstInvalidValue(value);
-    }
-    /**
-     * Tries to convert the entry value to the moment date format.
-     *
-     * @param {null|boolean|number|string|Moment} value
-     * @return {null|Moment}
-     */
-    convertDateToMoment(value) {
-        switch (typeof value) {
-            case 'number':
-            case 'string':
-            case 'boolean':
-                value = moment.utc(value);
-            default:
-                break;
-        }
-        return value;
-    }
-    /**
-     * Checks if entry value is valid.
-     */
-    guardAgainstInvalidValue(value) {
-        if (value !== null) {
-            switch (this.type) {
-                case 'date':
-                    value = this.convertDateToMoment(value);
-                    if (!value.isValid()) {
-                        throw new TypeError(`Invalid 'date' format.`);
-                    }
-                    break;
-                case 'integer':
-                    if (!Number.isInteger(value)) {
-                        throw new TypeError(`Invalid 'integer' format.`);
-                    }
-                    break;
-                case 'reference':
-                    /* istanbul ignore if */
-                    if (!(value.hasOwnProperty('$type')
-                        && value.hasOwnProperty('docId')
-                        && value.hasOwnProperty('docType'))) {
-                        throw new TypeError(`Invalid 'reference' format.`);
-                    }
-                    break;
-                case 'array':
-                    if (!Array.isArray(value)) {
-                        throw new TypeError(`Invalid 'array' format.`);
-                    }
-                    break;
-                default:
-                    if (typeof value !== this.type) {
-                        throw new TypeError(`Invalid '${this.type}' format.`);
-                    }
-                    break;
-            }
-        }
-        return true;
+            docId: null,
+            docType: model.name
+        }, null, model));
     }
 }
 exports.default = Type;

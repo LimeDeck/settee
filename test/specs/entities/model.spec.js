@@ -132,11 +132,13 @@ test.serial('it creates referenced models while creating the main one', async ()
   const Bike = settee.buildModel(BikeSchema)
   settee.registerModels([Engine, Bike])
 
+  const engine = await Engine.create({
+    power: 150
+  })
+
   const honda = await Bike.create({
     brand: 'Honda',
-    engine: {
-      power: 150
-    }
+    engine: engine
   })
 
   honda.engine.docId.should.not.be.null
@@ -147,9 +149,7 @@ test.serial('it creates referenced models while creating the main one', async ()
 
   Bike.create({
     brand: 'Honda',
-    engine: {
-      power: 150
-    }
+    engine: engine
   }).should.be.rejectedWith(StorageError)
 })
 
@@ -305,8 +305,11 @@ test('it deletes an entry by id', async () => {
 })
 
 test('it validates the source data for the model against the schema', () => {
-  Car.validateData({
+  const car = Car.validateData({
     brand: 'BMW',
     color: 'red'
-  }).should.be.true
+  }).should.contain({
+    brand: 'BMW',
+    color: 'red'
+  })
 })

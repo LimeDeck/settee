@@ -174,30 +174,60 @@ test.serial('workflow with referenced models', async () => {
 
   const Engine = settee.buildModel(EngineSchema)
 
-  // we define the Engine as Type.reference(Engine)
+  const WheelSchema = new Schema('Wheel', {
+    brand: Type.string()
+  })
+
+  const Wheel = settee.buildModel(WheelSchema)
+
+  // we define the Engine as Type.reference(Engine) and an array of wheels
   const CarSchema = new Schema('Car', {
     brand: Type.string(),
     topSpeed: Type.number(),
     taxPaid: Type.boolean(),
-    engine: Type.reference(Engine)
+    engine: Type.reference(Engine),
+    wheels: Type.array(Type.object({
+      wheelType: Type.reference(Wheel)
+    }))
   })
 
   const Car = settee.buildModel(CarSchema)
 
-  settee.registerModels([Car, Engine])
+  settee.registerModels([Car, Engine, Wheel])
+
+  let engine = await Engine.create({
+    power: 150,
+    make: 'Bayerische Motoren Werke AG'
+  })
+
+  let michelinWheel = await Wheel.create({
+    brand: 'Michelin'
+  })
+
+  let bridgestoneWheel = await Wheel.create({
+    brand: 'Bridgestone'
+  })
 
   let bmw = await Car.create({
     brand: 'BMW',
-    engine: {
-      power: 150,
-      make: 'Bayerische Motoren Werke AG'
-    }
+    engine: engine,
+    wheels: [
+      { wheelType: michelinWheel },
+      { wheelType: michelinWheel },
+      { wheelType: bridgestoneWheel },
+      { wheelType: bridgestoneWheel }
+    ]
   })
 
-  // you can now access the engine directly
+  // you can now access the engine and wheels directly
   bmw.brand.should.eq('BMW')
   bmw.engine.power.should.eq(150)
   bmw.engine.make.should.eq('Bayerische Motoren Werke AG')
+  bmw.wheels.should.have.lengthOf(4)
+  bmw.wheels[0].wheelType.brand.should.eq('Michelin')
+  bmw.wheels[1].wheelType.brand.should.eq('Michelin')
+  bmw.wheels[2].wheelType.brand.should.eq('Bridgestone')
+  bmw.wheels[3].wheelType.brand.should.eq('Bridgestone')
 
   // and you can also update the engine individually
   bmw.engine.power = 200

@@ -1,6 +1,7 @@
 import { Layout, SchemaIndexes } from '../typings';
 import Storage from '../storage';
 import Validator from '../services/validator';
+import { ObjectSchema } from 'joi';
 export default class Schema {
     /**
      * Name of the schema.
@@ -11,9 +12,9 @@ export default class Schema {
     /**
      * Layout of the schema.
      *
-     * @type {Layout}
+     * @type {ObjectSchema}
      */
-    layout: Layout;
+    layout: ObjectSchema;
     /**
      * List of registered indexes for the schema.
      *

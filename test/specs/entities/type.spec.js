@@ -1,173 +1,195 @@
 import test from 'ava'
 require('chai').use(require('chai-as-promised')).should()
+import { connect } from '../../_bootstrap'
 
+const Joi = require('joi')
 const moment = require('moment')
-import { Type } from '../../../.test/build'
+import { Type, Schema, settee } from '../../../.test/build'
+import Instance from '../../../.test/build/entities/instance'
+
+test.before.cb(t => {
+  connect()
+    .then(bucket => {
+      settee.useBucket(bucket)
+      t.end()
+    })
+})
 
 test('it defaults basic data types to null', t => {
-  t.is(Type.boolean().getDefaultValue(), null)
-  t.is(Type.string().getDefaultValue(), null)
-  t.is(Type.integer().getDefaultValue(), null)
-  t.is(Type.number().getDefaultValue(), null)
+  const schema = Type.object({
+    b: Type.boolean(),
+    s: Type.string(),
+    i: Type.integer(),
+    n: Type.number(),
+    o: Type.object({}),
+    d: Type.date()
+  })
+
+  const result = Joi.validate({}, schema)
+
+  t.is(result.error, null)
+  t.is(result.value.b, null)
+  t.is(result.value.s, null)
+  t.is(result.value.i, null)
+  t.is(result.value.n, null)
+  t.is(result.value.o, null)
+  t.is(result.value.d, null)
 })
 
-test('it defaults date type to null', t => {
-  t.is(Type.date().getDefaultValue(), null)
+test('it defaults array type to empty array', t => {
+  const schema = Type.object({
+    a: Type.array(Type.string())
+  })
+
+  const result = Joi.validate({}, schema)
+
+  t.is(result.error, null)
+  result.value.a.should.deep.eq([])
 })
 
-test('it defaults array type to empty array', () => {
-  Type.array().getDefaultValue().should.deep.eq([])
+test('it supports default values for all types', t => {
+  const schema = Type.object({
+    b: Type.boolean(false),
+    s: Type.string('foo'),
+    i: Type.integer(42),
+    n: Type.number(3.14),
+    o: Type.object({ s: Type.string() }, { s: 'bar' }),
+    a: Type.array(Type.number(), [123, 456]),
+    d: Type.date(moment.utc('2017-02-23T19:32:13+00:00'))
+  })
+
+  let result = Joi.validate({}, schema)
+
+  t.is(result.error, null)
+  result.value.b.should.be.false
+  result.value.s.should.eq('foo')
+  result.value.i.should.eq(42)
+  result.value.n.should.eq(3.14)
+  result.value.o.should.deep.eq({ s: 'bar' })
+  result.value.a.should.deep.eq([123, 456])
+  t.truthy(
+    result.value.d.isSame(moment.utc('2017-02-23T19:32:13+00:00'))
+  )
 })
 
-test('it supports boolean as default value for boolean type', t => {
-  Type.boolean(true).getDefaultValue().should.be.true
-  Type.boolean(false).getDefaultValue().should.be.false
+test('it supports callback as default value all types', t => {
+  const schema = Type.object({
+    b: Type.boolean(() => false, 'boolean callback'),
+    s: Type.string(() => 'foo', 'string callback'),
+    i: Type.integer(() => 42, 'integer callback'),
+    n: Type.number(() => 3.14, 'number callback'),
+    o: Type.object({ s: Type.string() }, () => { return { s: 'bar' } }, 'object callback'),
+    a: Type.array(Type.number(), () => [123, 456], 'array callback'),
+    d: Type.date(() => moment.utc('2017-02-23T19:32:13+00:00'), 'date callback')
+  })
 
-  const err = t.throws(() => {
-    Type.boolean('true')
-  }, TypeError)
+  let result = Joi.validate({}, schema)
 
-  err.message.should.contain(`Invalid 'boolean' format`)
-})
-
-test('it supports callback as default value for boolean type', t => {
-  Type.boolean(() => true || false).getDefaultValue().should.be.true
-
-  const err = t.throws(() => {
-    Type.boolean(() => 'true')
-  }, TypeError)
-
-  err.message.should.contain(`Invalid 'boolean' format`)
-})
-
-test('it supports string as default value for string type', t => {
-  Type.string('foobar').getDefaultValue().should.eq('foobar')
-
-  const err = t.throws(() => {
-    Type.string(false)
-  }, TypeError)
-
-  err.message.should.contain(`Invalid 'string' format`)
-})
-
-test('it supports callback as default value for string type', t => {
-  Type.string(() => 'baz').getDefaultValue().should.eq('baz')
-
-  const err = t.throws(() => {
-    Type.string(() => 15)
-  }, TypeError)
-
-  err.message.should.contain(`Invalid 'string' format`)
-})
-
-test('it supports integer as default value for integer type', t => {
-  Type.integer(42).getDefaultValue().should.eq(42)
-
-  const err = t.throws(() => {
-    Type.integer(false)
-  }, TypeError)
-
-  err.message.should.contain(`Invalid 'integer' format`)
-})
-
-test('it supports callback as default value for integer type', t => {
-  Type.integer(() => 69).getDefaultValue().should.eq(69)
-
-  const err = t.throws(() => {
-    Type.integer(() => 9.81)
-  }, TypeError)
-
-  err.message.should.contain(`Invalid 'integer' format`)
-})
-
-test('it supports number (integer or float) as default value for number type', t => {
-  Type.number(3.14).getDefaultValue().should.eq(3.14)
-  Type.number(42).getDefaultValue().should.eq(42)
-
-  const err = t.throws(() => {
-    Type.number('3.14')
-  }, TypeError)
-
-  err.message.should.contain(`Invalid 'number' format`)
-})
-
-test('it supports callback as default value for number type', t => {
-  Type.number(() => 2.718).getDefaultValue().should.eq(2.718)
-  Type.number(() => 42).getDefaultValue().should.eq(42)
-
-  const err = t.throws(() => {
-    Type.number(() => [42])
-  }, TypeError)
-
-  err.message.should.contain(`Invalid 'number' format`)
+  t.is(result.error, null)
+  result.value.b.should.be.false
+  result.value.s.should.eq('foo')
+  result.value.i.should.eq(42)
+  result.value.n.should.eq(3.14)
+  result.value.o.should.deep.eq({ s: 'bar' })
+  result.value.a.should.deep.eq([123, 456])
+  t.truthy(
+    result.value.d.isSame(moment.utc('2017-02-23T19:32:13+00:00'))
+  )
 })
 
 test('it supports timestamp in ms as default value for date type', t => {
-  t.truthy(
-    Type.date(1487878333000).getDefaultValue()
-      .isSame(moment.utc('2017-02-23T19:32:13+00:00'))
-  )
+  const schema = Type.object({
+    d: Type.date(1487878333000)
+  })
 
-  const err = t.throws(() => {
-    Type.date(false)
-  }, TypeError)
+  const result = Joi.validate({}, schema)
 
-  err.message.should.contain(`Invalid 'date' format`)
+  t.is(result.error, null)
+  result.value.d.should.eq(1487878333000)
 })
 
 test('it supports valid ISO date string as default value for date type', t => {
-  t.truthy(
-    Type.date('2017-02-23T19:32:13+00:00').getDefaultValue()
-      .isSame(moment.utc('2017-02-23T19:32:13+00:00'))
-  )
+  const schema = Type.object({
+    d: Type.date('2017-02-23T19:32:13+00:00')
+  })
+
+  const result = Joi.validate({}, schema)
+
+  t.is(result.error, null)
+  result.value.d.should.eq('2017-02-23T19:32:13+00:00')
 })
 
-test('it supports valid moment instance as default value for date type', t => {
-  t.truthy(
-    Type.date(moment.utc('2017-02-23T19:32:13+00:00')).getDefaultValue()
-      .isSame(moment.utc('2017-02-23T19:32:13+00:00'))
-  )
-})
+test('it provides moment instance after successful date validation', t => {
+  const schema = Type.object({
+    d: Type.date()
+  })
 
-test('it supports callback as default value for date type', t => {
-  Type.date(() => Date.now()).getDefaultValue().year()
-    .should.eq(new Date().getFullYear())
+  // moment instance
+  let result = Joi.validate({
+    d: moment.utc('2017-02-23T19:32:13+00:00')
+  }, schema)
 
+  t.is(result.error, null)
   t.truthy(
-    Type.date(() => moment.utc('2017-02-23T19:32:13+00:00')).getDefaultValue()
-      .isSame(moment.utc('2017-02-23T19:32:13+00:00'))
-  )
-
-  t.truthy(
-    Type.date(() => '2017-02-23T19:32:13+00:00').getDefaultValue()
-      .isSame(moment.utc('2017-02-23T19:32:13+00:00'))
+    result.value.d.isSame(moment.utc('2017-02-23T19:32:13+00:00'))
   )
 
-  const err = t.throws(() => {
-    Type.date(() => '1487878333000')
-  }, TypeError)
+  // valid datetime string
+  result = Joi.validate({
+    d: '2017-02-23T19:32:13+00:00'
+  }, schema)
 
-  err.message.should.contain(`Invalid 'date' format`)
+  t.is(result.error, null)
+  t.truthy(
+    result.value.d.isSame(moment.utc('2017-02-23T19:32:13+00:00'))
+  )
+
+  // invalid datetime string
+  result = Joi.validate({
+    d: '20170223T1932130000'
+  }, schema)
+
+  result.error.details[0].message.should.contain('must be a valid momentjs instance')
 })
 
-test('it supports array as default value for array type', t => {
-  Type.array([1, 2, 3]).getDefaultValue().should.deep.eq([1, 2, 3])
+test('it supports array of objects', t => {
+  const RoleSchema = new Schema('Role', {
+    name: Type.string()
+  })
 
-  const err = t.throws(() => {
-    Type.array({ 1: 'foo' })
-  }, TypeError)
+  const Role = settee.buildModel(RoleSchema)
 
-  err.message.should.contain(`Invalid 'array' format`)
+  let admin = new Instance('Role::123', {
+    docId: '123',
+    docType: 'Role',
+    name: 'admin'
+  }, null, Role)
+
+  let manager = new Instance('Role::456', {
+    docId: '456',
+    docType: 'Role',
+    name: 'manager'
+  }, null, Role)
+
+  const schema = Type.array(Type.object({
+    name: Type.string(),
+    role: Type.reference(Role)
+  }))
+
+  let result = Joi.validate([
+    { name: 'Mike', role: admin },
+    { name: 'John', role: admin },
+    { name: 'Jack', role: manager }
+  ], schema)
+
+  t.is(result.error, null)
+
+  // error
+  result = Joi.validate([
+    { name: 'Mike', role: 'developer' }
+  ], schema)
+
+  t.not(result.error, null)
+
+  result.error.details[0].message.should.contain('must be a valid model instance')
 })
-
-test('it supports callback as default value for array type', t => {
-  Type.array(() => ['foo', 'bar', 3]).getDefaultValue()
-    .should.deep.eq(['foo', 'bar', 3])
-
-  const err = t.throws(() => {
-    Type.array(() => 15)
-  }, TypeError)
-
-  err.message.should.contain(`Invalid 'array' format`)
-})
-

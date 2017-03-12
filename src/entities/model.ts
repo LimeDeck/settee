@@ -1,5 +1,3 @@
-import { set } from 'lodash'
-import { settee } from '../index'
 import Storage from '../storage'
 import { buildKey } from '../utils'
 import UuidKey from '../keys/uuid'
@@ -8,7 +6,9 @@ import QueryBuilder from '../services/queryBuilder'
 import { SetteeError } from '../errors'
 import Schema from './schema'
 import Validator from '../services/validator'
-import { Layout, Methods, ModelObject, StorageObject } from '../typings'
+import { Methods, ModelObject, StorageObject } from '../typings'
+import { ObjectSchema } from 'joi'
+import { set } from 'lodash'
 
 export default class Model {
   /**
@@ -29,7 +29,7 @@ export default class Model {
   /**
    * Layout of the schema.
    */
-  public layout: Layout
+  public layout: ObjectSchema
 
   /**
    * Active storage instance.
@@ -132,7 +132,7 @@ export default class Model {
   public async create (data): Promise<Instance> {
     return new Promise<Instance>(async (resolve, reject) => {
       try {
-        this.validateData(data)
+        data = this.validateData(data)
       } catch (err) {
         return reject(err)
       }
@@ -145,31 +145,16 @@ export default class Model {
 
       let instance = this.buildInstance(uuid.getKey(), data)
 
-      let referencedInstances = []
-
-      // TODO: refactor
-      try {
-        for (let referenced of instance.getReferencedModels()) {
-          let referencedModel = settee.getModel(referenced.model)
-          let referencedInstance = await referencedModel.create(referenced.data)
-
-          set(instance, `${referenced.pathToModel}.docId`, referencedInstance.getId())
-
-          referencedInstances.push({
-            instance: referencedInstance,
-            path: referenced.pathToModel
-          })
-        }
-      } catch (err) {
-        return reject(err)
-      }
-
-      this.storage.insert(instance.getKey(), instance.getData())
+      this.storage.insert(instance.getKey(), instance.getDataForStorage())
         .then(async ({ cas }) => {
           instance.setCas(cas)
 
-          for (let referencedInstance of referencedInstances) {
-            set(instance, referencedInstance.path, referencedInstance.instance)
+          for (let referenced of instance.getReferencedModels()) {
+            if (!referenced.data.getId()) {
+              continue
+            }
+
+            set(instance, `${referenced.pathToModel}`, referenced.data)
           }
 
           resolve(instance)

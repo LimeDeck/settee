@@ -8,9 +8,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const index_1 = require("../index");
-const errors_1 = require("../errors");
-const type_1 = require("./type");
 const lodash_1 = require("lodash");
 class Instance {
     /**
@@ -28,14 +25,14 @@ class Instance {
         this.modelInstance = {
             key,
             cas,
-            data: Object.assign({}, model.layout),
+            data,
             id: data.docId,
             type: data.docType,
             dirty: false,
             monitoredProperties: new Set(),
             referencedModels: []
         };
-        this.applyData(data);
+        this.applyData();
         this.applyMethods(options.instanceMethods || {});
     }
     /**
@@ -104,7 +101,7 @@ class Instance {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
                 try {
-                    this.validateData(this.modelInstance.data);
+                    this.validateData(this.getData());
                 }
                 catch (err) {
                     return reject(err);
@@ -112,8 +109,7 @@ class Instance {
                 if (!this.isDirty()) {
                     resolve(true);
                 }
-                let updatedData = this.modelInstance.data;
-                this.storage.replace(this.getKey(), updatedData, { cas: this.getCas() })
+                this.storage.replace(this.getKey(), this.getDataForStorage(), { cas: this.getCas() })
                     .then(response => resolve(true))
                     .catch(err => reject(err));
             });
@@ -128,19 +124,18 @@ class Instance {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => {
                 this.storage.remove(this.getKey(), { cas: this.getCas() })
-                    .then((result) => __awaiter(this, void 0, void 0, function* () {
+                    .then(() => __awaiter(this, void 0, void 0, function* () {
+                    let referencedKeysToDelete = new Set();
                     try {
-                        for (let referenced of this.getReferencedModels()) {
-                            let referencedModel = index_1.settee.getModel(referenced.model);
-                            let id = lodash_1.get(this.getData(), `${referenced.pathToModel}.docId`);
-                            /* istanbul ignore else */
-                            if (typeof id === 'string') {
-                                yield referencedModel.deleteById(id);
+                        yield Promise.all(this.getReferencedModels()
+                            .reduce((carry, referenced) => {
+                            let key = `${referenced.model}::${referenced.data.getId()}`;
+                            if (!referencedKeysToDelete.has(key)) {
+                                referencedKeysToDelete.add(key);
+                                carry.push(this.storage.remove(key));
                             }
-                            else {
-                                throw new errors_1.SetteeError('Unable to get the id of the referenced model.');
-                            }
-                        }
+                            return carry;
+                        }, []));
                     }
                     catch (err) {
                         return reject(err);
@@ -160,14 +155,29 @@ class Instance {
         return this.modelInstance.data;
     }
     /**
+     * Provides the latest data of the instance for storing purposes.
+     *
+     * @return {Object}
+     */
+    getDataForStorage() {
+        let storageData = Object.assign({}, this.modelInstance.data);
+        this.modelInstance.referencedModels.forEach(reference => {
+            lodash_1.set(storageData, reference.pathToModel, {
+                $type: 'reference',
+                docType: reference.model,
+                docId: reference.data.getId()
+            });
+        });
+        return storageData;
+    }
+    /**
      * Applies the data to the instance.
      *
-     * @param {Object} data
      * @return {void}
      */
-    applyData(data) {
+    applyData() {
+        this.findReferences(this.getData());
         for (let name in this.getData()) {
-            this.modelInstance.data[name] = this.assignData(name, data);
             Object.defineProperty(this, name, {
                 enumerable: true,
                 configurable: true,
@@ -183,43 +193,37 @@ class Instance {
         }
     }
     /**
-     * Assigns data to the model instance.
+     * Finds
      *
-     * @param {string} path
-     * @param {Object} data
-     * @return {Object}
+     * @return {void}
      */
-    assignData(path, data) {
-        let layoutEntry = lodash_1.get(this.modelInstance.data, path);
-        let value = lodash_1.get(data, path);
-        if (layoutEntry instanceof type_1.default) {
-            if (value === undefined) {
-                return layoutEntry.getDefaultValue();
-            }
-            if (layoutEntry.getType() === 'reference') {
-                this.modelInstance.referencedModels.push({
-                    data: value,
-                    model: layoutEntry.getDefaultValue().docType,
-                    pathToModel: path
+    findReferences(object, prev = null, currentDepth = 1) {
+        Object.keys(object).forEach(key => {
+            let value = object[key];
+            let isArray = Array.isArray(value);
+            let type = Object.prototype.toString.call(value);
+            let isObject = (type === '[object Object]' ||
+                type === '[object Array]');
+            let newKey = prev ? `${prev}.${key}` : key;
+            if (isArray) {
+                value.forEach(entry => {
+                    return this.findReferences(entry, newKey, currentDepth + 1);
                 });
-                /* istanbul ignore else */
+            }
+            if (!isArray && isObject && Object.keys(value).length) {
                 if (value instanceof Instance) {
-                    return value;
+                    this.modelInstance.referencedModels.push({
+                        data: value,
+                        model: value.getType(),
+                        pathToModel: newKey
+                    });
                 }
                 else {
-                    return layoutEntry.getDefaultValue();
+                    return this.findReferences(value, newKey, currentDepth + 1);
                 }
             }
-            return value;
-        }
-        /* istanbul ignore else */
-        if (typeof layoutEntry === 'object') {
-            for (let prop in layoutEntry) {
-                let subPath = `${path}.${prop}`;
-                layoutEntry[prop] = this.assignData(subPath, data);
-            }
-        }
-        return layoutEntry;
+        });
+        return true;
     }
     /**
      * Adds methods to the instance.

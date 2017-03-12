@@ -1,10 +1,9 @@
-import Model from './entities/model'
-import Type from './entities/type'
 import {
   BucketManager as CbBucketManager,
   Bucket as CbBucket, CouchbaseError
 } from 'couchbase'
 import CAS = CbBucket.CAS
+import { Schema as JoiSchema } from 'joi'
 
 export declare type CouchbaseIndex = {
   name: string
@@ -30,7 +29,8 @@ export declare type Methods = {
 }
 
 export declare type Layout = {
-  [key: string]: Type|Layout|Layout[]
+  isJoi: boolean,
+  [key: string]: JoiSchema|Layout|Layout[]
 }
 
 export declare type ReferencedModels = Array<{
