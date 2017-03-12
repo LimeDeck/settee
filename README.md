@@ -1,4 +1,4 @@
-# Settee
+# Settee ODM
 > Modern JavaScript ODM for Couchbase 🛋️
 
 
@@ -676,7 +676,7 @@ Car.q().where('topSpeeed', '<=', 190)
 Car.q()
   .where('brand', 'Audi')
   .where('topSpeeed', '<=', 190)
-  ...
+  .get()
 ```
 
 **Allowed operators**:
