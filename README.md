@@ -668,7 +668,7 @@ Examples:
 Car.q().where('brand', '=', 'Audi')
 
 // is the same as
-Car.q().where('brand, 'Audi')
+Car.q().where('brand', 'Audi')
 
 Car.q().where('topSpeeed', '<=', 190)
 
