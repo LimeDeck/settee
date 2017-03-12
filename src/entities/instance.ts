@@ -1,12 +1,24 @@
-import { settee } from '../index'
-import { SetteeError } from '../errors'
 import Storage from '../storage'
 import Model from './model'
-import Type from './type'
-import { get } from 'lodash'
+import { set } from 'lodash'
 import { ModelInstance, ReferencedModels, Methods, CAS } from '../typings'
 
 export default class Instance {
+  /**
+   * Id of the document instance.
+   */
+  public docId: string
+
+  /**
+   * Type of the document instance.
+   */
+  public docType: string
+
+  /**
+   * Type of the record. Only valid if the instance is a reference.
+   */
+  public $type?: string
+
   /**
    * Function which validates the data.
    */
@@ -31,14 +43,14 @@ export default class Instance {
    * @param {Model} model
    * @param {Object} options
    */
-  constructor (key: string, data, cas, model: Model, options: any = {}) {
+  constructor (key: string, data, cas: CAS, model: Model, options: any = {}) {
     this.storage = model.getStorage()
     this.validateData = model.validateData.bind(model)
 
     this.modelInstance = {
       key,
       cas,
-      data: Object.assign({}, model.layout),
+      data,
       id: data.docId,
       type: data.docType,
       dirty: false,
@@ -46,7 +58,7 @@ export default class Instance {
       referencedModels: []
     }
 
-    this.applyData(data)
+    this.applyData()
     this.applyMethods(options.instanceMethods || {})
   }
 
@@ -123,7 +135,7 @@ export default class Instance {
   public async save (): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
       try {
-        this.validateData(this.modelInstance.data)
+        this.validateData(this.getData())
       } catch (err) {
         return reject(err)
       }
@@ -132,9 +144,7 @@ export default class Instance {
         resolve(true)
       }
 
-      let updatedData = this.modelInstance.data
-
-      this.storage.replace(this.getKey(), updatedData, { cas: this.getCas() })
+      this.storage.replace(this.getKey(), this.getDataForStorage(), { cas: this.getCas() })
         .then(response => resolve(true))
         .catch(err => reject(err))
     })
@@ -148,20 +158,22 @@ export default class Instance {
   public async delete (): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
       this.storage.remove(this.getKey(), { cas: this.getCas() })
-        .then(async result => {
+        .then(async () => {
+          let referencedKeysToDelete = new Set()
+
           try {
-            for (let referenced of this.getReferencedModels()) {
-              let referencedModel = settee.getModel(referenced.model)
+            await Promise.all(
+              this.getReferencedModels()
+                .reduce((carry, referenced) => {
+                  let key = `${referenced.model}::${referenced.data.getId()}`
+                  if (!referencedKeysToDelete.has(key)) {
+                    referencedKeysToDelete.add(key)
+                    carry.push(this.storage.remove(key))
+                  }
 
-              let id = get(this.getData(), `${referenced.pathToModel}.docId`)
-
-              /* istanbul ignore else */
-              if (typeof id === 'string') {
-                await referencedModel.deleteById(id)
-              } else {
-                throw new SetteeError('Unable to get the id of the referenced model.')
-              }
-            }
+                  return carry
+                }, [])
+            )
           } catch (err) {
             return reject(err)
           }
@@ -182,15 +194,33 @@ export default class Instance {
   }
 
   /**
+   * Provides the latest data of the instance for storing purposes.
+   *
+   * @return {Object}
+   */
+  public getDataForStorage (): {} {
+    let storageData = Object.assign({}, this.modelInstance.data)
+
+    this.modelInstance.referencedModels.forEach(reference => {
+      set(storageData, reference.pathToModel, {
+        $type: 'reference',
+        docType: reference.model,
+        docId: reference.data.getId()
+      })
+    })
+
+    return storageData
+  }
+
+  /**
    * Applies the data to the instance.
    *
-   * @param {Object} data
    * @return {void}
    */
-  public applyData (data: {}): void {
-    for (let name in this.getData()) {
-      this.modelInstance.data[name] = this.assignData(name, data)
+  public applyData (): void {
+    this.findReferences(this.getData())
 
+    for (let name in this.getData()) {
       Object.defineProperty(this, name, {
         enumerable: true,
         configurable: true,
@@ -208,48 +238,42 @@ export default class Instance {
   }
 
   /**
-   * Assigns data to the model instance.
+   * Finds
    *
-   * @param {string} path
-   * @param {Object} data
-   * @return {Object}
+   * @return {void}
    */
-  protected assignData (path: string, data: {}): {} {
-    let layoutEntry = get(this.modelInstance.data, path)
-    let value = get(data, path)
+  protected findReferences (object, prev = null, currentDepth = 1): boolean {
+    Object.keys(object).forEach(key => {
+      let value = object[key]
+      let isArray = Array.isArray(value)
+      let type = Object.prototype.toString.call(value)
+      let isObject = (
+        type === '[object Object]' ||
+        type === '[object Array]'
+      )
 
-    if (layoutEntry instanceof Type) {
-      if (value === undefined) {
-        return layoutEntry.getDefaultValue()
+      let newKey = prev ? `${prev}.${key}` : key
+
+      if (isArray) {
+        value.forEach(entry => {
+          return this.findReferences(entry, newKey, currentDepth + 1)
+        })
       }
 
-      if (layoutEntry.getType() === 'reference') {
-        this.modelInstance.referencedModels.push({
-          data: value,
-          model: layoutEntry.getDefaultValue().docType,
-          pathToModel: path
-        })
-
-        /* istanbul ignore else */
+      if (!isArray && isObject && Object.keys(value).length) {
         if (value instanceof Instance) {
-          return value
+          this.modelInstance.referencedModels.push({
+            data: value,
+            model: value.getType(),
+            pathToModel: newKey
+          })
         } else {
-          return layoutEntry.getDefaultValue()
+          return this.findReferences(value, newKey, currentDepth + 1)
         }
       }
+    })
 
-      return value
-    }
-
-    /* istanbul ignore else */
-    if (typeof layoutEntry === 'object') {
-      for (let prop in layoutEntry) {
-        let subPath = `${path}.${prop}`
-        layoutEntry[prop] = this.assignData(subPath, data)
-      }
-    }
-
-    return layoutEntry
+    return true
   }
 
   /**

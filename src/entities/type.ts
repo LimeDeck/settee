@@ -1,72 +1,94 @@
-const moment = require('moment')
+import { BooleanSchema, StringSchema, NumberSchema, DateSchema, ObjectSchema, Schema, ArraySchema } from '@types/joi'
 import { Moment } from 'moment'
 import Model from './model'
-
-// Ensure that moment treats invalid date as truly invalid date
-// without the annoying deprecation warning.
-moment.createFromInputFallback = config => {
-  config._d = new Date(NaN)
-}
+import { Joi } from '../services/validator'
+import Instance from './instance'
 
 export default class Type {
   /**
    * Boolean entry type.
    *
    * @param {null|boolean|function} defaultValue
-   * @return {Type}
+   * @param {string} Optional callbackName
+   * @return {BooleanSchema}
    */
-  public static boolean (defaultValue: any = null): Type {
-    return new Type('boolean', defaultValue)
+  public static boolean (defaultValue: any = null, callbackName?: string): BooleanSchema {
+    return Joi.boolean().allow(null)
+      .default(defaultValue, callbackName)
   }
 
   /**
    * String entry type.
    *
    * @param {null|string|function} defaultValue
-   * @return {Type}
+   * @param {string} Optional callbackName
+   * @return {StringSchema}
    */
-  public static string (defaultValue: any = null): Type {
-    return new Type('string', defaultValue)
+  public static string (defaultValue: any = null, callbackName?: string): StringSchema {
+    return Joi.string().allow(null)
+      .default(defaultValue, callbackName)
   }
 
   /**
    * Integer entry type.
    *
    * @param {null|number|function} defaultValue
-   * @return {Type}
+   * @param {string} Optional callbackName
+   * @return {NumberSchema}
    */
-  public static integer (defaultValue: any = null): Type {
-    return new Type('integer', defaultValue)
+  public static integer (defaultValue: any = null, callbackName?: string): NumberSchema {
+    return Joi.number().integer().allow(null)
+      .default(defaultValue, callbackName)
   }
 
   /**
    * Number entry type.
    *
    * @param {null|number|function} defaultValue
-   * @return {Type}
+   * @param {string} Optional callbackName
+   * @return {NumberSchema}
    */
-  public static number (defaultValue: any = null): Type {
-    return new Type('number', defaultValue)
+  public static number (defaultValue: any = null, callbackName?: string): NumberSchema {
+    return Joi.number().allow(null)
+      .default(defaultValue, callbackName)
   }
 
   /**
    * Date entry type.
    *
    * @param {null|number|string|Moment|function} defaultValue
-   * @return {Type}
+   * @param {string} Optional callbackName
+   * @return {DateSchema}
    */
-  public static date (defaultValue = null): Type {
-    return new Type('date', defaultValue)
+  public static date (defaultValue: any = null, callbackName?: string): DateSchema {
+    return Joi.momentdate().valid().allow(null)
+      .default(defaultValue, callbackName)
+  }
+
+  /**
+   * Object entry type.
+   *
+   * @param {Object} schema
+   * @param {Object|Function} defaultValue
+   * @param {string} Optional callbackName
+   * @return {ObjectSchema}
+   */
+  public static object (schema: any, defaultValue: any = null, callbackName?: string): ObjectSchema {
+    return Joi.object().keys(schema).allow(null)
+      .default(defaultValue, callbackName)
   }
 
   /**
    * Array entry type.
    *
+   * @param {Type} itemType
    * @param {Array} defaultValue
+   * @param {string} Optional callbackName
    * @return {Type}
    */
-  public static array (defaultValue = []): Type {
-    return new Type('array', defaultValue)
+  public static array (itemType: Schema, defaultValue = [], callbackName?: string): ArraySchema {
+    return Joi.array().items(itemType)
+      .default(defaultValue, callbackName)
   }
 
   /**
@@ -76,147 +98,11 @@ export default class Type {
    * @return {Type}
    */
   public static reference (model: Model): Type {
-    return new Type('reference', {
-      $type: 'reference',
-      docType: model.name,
-      docId: null
-    })
-  }
-
-  /**
-   * Type of the entry.
-   *
-   * {string}
-   */
-  protected type: string
-
-  /**
-   * Default value of the entry.
-   *
-   * {null|boolean|number|string|Moment|function}
-   */
-  protected defaultValue: any
-
-  /**
-   * Type constructor.
-   *
-   * @param {string} type
-   * @param {null|boolean|number|string|Moment|function} defaultValue
-   */
-  constructor (type: string, defaultValue: any) {
-    this.type = type
-    this.defaultValue = defaultValue
-
-    this.guardAgainstInvalidValue(this.getDefaultValue())
-  }
-
-  /**
-   * Provides the type of the entry.
-   *
-   * @return {string}
-   */
-  public getType (): string {
-    return this.type
-  }
-
-  /**
-   * Provides the default value for the type.
-   *
-   * @return {null|boolean|number|string|Moment|function}
-   */
-  public getDefaultValue (): any {
-    let value = this.defaultValue
-
-    if (typeof value === 'function') {
-      value = this.defaultValue()
-    }
-
-    if (this.type === 'date') {
-      value = this.convertDateToMoment(value)
-    }
-
-    return value
-  }
-
-  /**
-   * Checks the provided value for the type.
-   *
-   * @param {any} value
-   * @return {boolean}
-   */
-  public check (value: any): boolean {
-    if (this.type === 'date') {
-      value = this.convertDateToMoment(value)
-    }
-
-    return this.guardAgainstInvalidValue(value)
-  }
-
-  /**
-   * Tries to convert the entry value to the moment date format.
-   *
-   * @param {null|boolean|number|string|Moment} value
-   * @return {null|Moment}
-   */
-  protected convertDateToMoment (value: any): null|Moment {
-    switch (typeof value) {
-      case 'number':
-      case 'string':
-      case 'boolean':
-        value = moment.utc(value)
-
-      default:
-        break
-    }
-
-    return value
-  }
-
-  /**
-   * Checks if entry value is valid.
-   */
-  protected guardAgainstInvalidValue (value: any): boolean {
-    if (value !== null) {
-      switch (this.type) {
-        case 'date':
-          value = this.convertDateToMoment(value)
-
-          if (!value.isValid()) {
-            throw new TypeError(`Invalid 'date' format.`)
-          }
-          break
-
-        case 'integer':
-          if (!Number.isInteger(value)) {
-            throw new TypeError(`Invalid 'integer' format.`)
-          }
-          break
-
-        case 'reference':
-          /* istanbul ignore if */
-          if (!
-              (value.hasOwnProperty('$type')
-              && value.hasOwnProperty('docId')
-              && value.hasOwnProperty('docType'))
-          ) {
-            throw new TypeError(`Invalid 'reference' format.`)
-          }
-          break
-
-        case 'array':
-          if (!Array.isArray(value)) {
-            throw new TypeError(`Invalid 'array' format.`)
-          }
-          break
-
-        default:
-          if (typeof value !== this.type) {
-            throw new TypeError(`Invalid '${this.type}' format.`)
-          }
-          break
-      }
-    }
-
-    return true
+    return Joi.reference().valid()
+      .default(new Instance(null, {
+        $type: 'reference',
+        docId: null,
+        docType: model.name
+      }, null, model))
   }
 }

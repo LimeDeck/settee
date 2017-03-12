@@ -3,6 +3,7 @@ require('chai').use(require('chai-as-promised')).should()
 import { connect } from '../../_bootstrap'
 import td from 'testdouble'
 
+const Joi = require('joi')
 import { settee, Schema, Type } from '../../../.test/build'
 import Storage from '../../../.test/build/storage'
 import Validator from '../../../.test/build/services/validator'
@@ -28,8 +29,8 @@ test.afterEach(() => {
 })
 
 test('it adds docId and docType to schema layout by default', () => {
-  schema.layout.docId.should.be.instanceOf(Type)
-  schema.layout.docType.should.be.instanceOf(Type)
+  Joi.reach(schema.layout, 'docId').should.not.be.undefined
+  Joi.reach(schema.layout, 'docType').should.not.be.undefined
 })
 
 test('it sets and provides the storage', () => {

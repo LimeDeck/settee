@@ -3,6 +3,18 @@ import Model from './model';
 import { ModelInstance, ReferencedModels, Methods, CAS } from '../typings';
 export default class Instance {
     /**
+     * Id of the document instance.
+     */
+    docId: string;
+    /**
+     * Type of the document instance.
+     */
+    docType: string;
+    /**
+     * Type of the record. Only valid if the instance is a reference.
+     */
+    $type?: string;
+    /**
      * Function which validates the data.
      */
     protected validateData: Function;
@@ -23,7 +35,7 @@ export default class Instance {
      * @param {Model} model
      * @param {Object} options
      */
-    constructor(key: string, data: any, cas: any, model: Model, options?: any);
+    constructor(key: string, data: any, cas: CAS, model: Model, options?: any);
     /**
      * Provides instance id.
      *
@@ -85,20 +97,23 @@ export default class Instance {
      */
     getData(): {};
     /**
-     * Applies the data to the instance.
+     * Provides the latest data of the instance for storing purposes.
      *
-     * @param {Object} data
-     * @return {void}
-     */
-    applyData(data: {}): void;
-    /**
-     * Assigns data to the model instance.
-     *
-     * @param {string} path
-     * @param {Object} data
      * @return {Object}
      */
-    protected assignData(path: string, data: {}): {};
+    getDataForStorage(): {};
+    /**
+     * Applies the data to the instance.
+     *
+     * @return {void}
+     */
+    applyData(): void;
+    /**
+     * Finds
+     *
+     * @return {void}
+     */
+    protected findReferences(object: any, prev?: any, currentDepth?: number): boolean;
     /**
      * Adds methods to the instance.
      *

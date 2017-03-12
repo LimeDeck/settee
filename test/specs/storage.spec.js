@@ -309,10 +309,12 @@ test.serial('it builds deferred indexes', async () => {
 
   indexes = (await storage.getIndexes(options))
   index = indexes.find(index => {
-    return index.name === 'findByPower'
+    return setTimeout(() => {
+      return index.name === 'findByPower'
+    }, 500)
   })
 
-  index.state.should.eq('building')
+  index.state.should.eq('online')
 
   await storage.dropIndex('findByPower')
 

@@ -6,13 +6,14 @@ import Storage from './storage'
 import Indexer from './indexes/indexer'
 import Model from './entities/model'
 import Schema from './entities/schema'
-import { Bucket, Layout } from './typings'
+import { Bucket } from './typings'
+import { ObjectSchema } from 'joi'
 
 export default class Settee {
   /**
    * Container for registered schemas.
    */
-  public registeredSchemas: Map<string, Layout> = new Map()
+  public registeredSchemas: Map<string, ObjectSchema> = new Map()
 
   /**
    * Container for registered models.

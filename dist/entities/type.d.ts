@@ -1,48 +1,64 @@
-import { Moment } from 'moment';
+import { BooleanSchema, StringSchema, NumberSchema, DateSchema, ObjectSchema, Schema, ArraySchema } from '@types/joi';
 import Model from './model';
 export default class Type {
     /**
      * Boolean entry type.
      *
      * @param {null|boolean|function} defaultValue
-     * @return {Type}
+     * @param {string} Optional callbackName
+     * @return {BooleanSchema}
      */
-    static boolean(defaultValue?: any): Type;
+    static boolean(defaultValue?: any, callbackName?: string): BooleanSchema;
     /**
      * String entry type.
      *
      * @param {null|string|function} defaultValue
-     * @return {Type}
+     * @param {string} Optional callbackName
+     * @return {StringSchema}
      */
-    static string(defaultValue?: any): Type;
+    static string(defaultValue?: any, callbackName?: string): StringSchema;
     /**
      * Integer entry type.
      *
      * @param {null|number|function} defaultValue
-     * @return {Type}
+     * @param {string} Optional callbackName
+     * @return {NumberSchema}
      */
-    static integer(defaultValue?: any): Type;
+    static integer(defaultValue?: any, callbackName?: string): NumberSchema;
     /**
      * Number entry type.
      *
      * @param {null|number|function} defaultValue
-     * @return {Type}
+     * @param {string} Optional callbackName
+     * @return {NumberSchema}
      */
-    static number(defaultValue?: any): Type;
+    static number(defaultValue?: any, callbackName?: string): NumberSchema;
     /**
      * Date entry type.
      *
      * @param {null|number|string|Moment|function} defaultValue
-     * @return {Type}
+     * @param {string} Optional callbackName
+     * @return {DateSchema}
      */
-    static date(defaultValue?: any): Type;
+    static date(defaultValue?: any, callbackName?: string): DateSchema;
+    /**
+     * Object entry type.
+     *
+     * @param {Object} schema
+     * @param {Object|Function} defaultValue
+     * @param {string} Optional callbackName
+     * @return {ObjectSchema}
+     */
+    static object(schema: any, defaultValue?: any, callbackName?: string): ObjectSchema;
     /**
      * Array entry type.
      *
+     * @param {Type} itemType
      * @param {Array} defaultValue
+     * @param {string} Optional callbackName
      * @return {Type}
      */
-    static array(defaultValue?: any[]): Type;
+    static array(itemType: Schema, defaultValue?: any[], callbackName?: string): ArraySchema;
     /**
      * Reference entry type.
      *
@@ -50,53 +66,4 @@ export default class Type {
      * @return {Type}
      */
     static reference(model: Model): Type;
-    /**
-     * Type of the entry.
-     *
-     * {string}
-     */
-    protected type: string;
-    /**
-     * Default value of the entry.
-     *
-     * {null|boolean|number|string|Moment|function}
-     */
-    protected defaultValue: any;
-    /**
-     * Type constructor.
-     *
-     * @param {string} type
-     * @param {null|boolean|number|string|Moment|function} defaultValue
-     */
-    constructor(type: string, defaultValue: any);
-    /**
-     * Provides the type of the entry.
-     *
-     * @return {string}
-     */
-    getType(): string;
-    /**
-     * Provides the default value for the type.
-     *
-     * @return {null|boolean|number|string|Moment|function}
-     */
-    getDefaultValue(): any;
-    /**
-     * Checks the provided value for the type.
-     *
-     * @param {any} value
-     * @return {boolean}
-     */
-    check(value: any): boolean;
-    /**
-     * Tries to convert the entry value to the moment date format.
-     *
-     * @param {null|boolean|number|string|Moment} value
-     * @return {null|Moment}
-     */
-    protected convertDateToMoment(value: any): null | Moment;
-    /**
-     * Checks if entry value is valid.
-     */
-    protected guardAgainstInvalidValue(value: any): boolean;
 }

@@ -8,13 +8,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const lodash_1 = require("lodash");
-const index_1 = require("../index");
 const utils_1 = require("../utils");
 const uuid_1 = require("../keys/uuid");
 const instance_1 = require("./instance");
 const queryBuilder_1 = require("../services/queryBuilder");
 const errors_1 = require("../errors");
+const lodash_1 = require("lodash");
 class Model {
     /**
      * Model constructor.
@@ -97,7 +96,7 @@ class Model {
         return __awaiter(this, void 0, void 0, function* () {
             return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
                 try {
-                    this.validateData(data);
+                    data = this.validateData(data);
                 }
                 catch (err) {
                     return reject(err);
@@ -107,27 +106,14 @@ class Model {
                 data.docId = uuid.getId();
                 data.docType = this.name;
                 let instance = this.buildInstance(uuid.getKey(), data);
-                let referencedInstances = [];
-                // TODO: refactor
-                try {
-                    for (let referenced of instance.getReferencedModels()) {
-                        let referencedModel = index_1.settee.getModel(referenced.model);
-                        let referencedInstance = yield referencedModel.create(referenced.data);
-                        lodash_1.set(instance, `${referenced.pathToModel}.docId`, referencedInstance.getId());
-                        referencedInstances.push({
-                            instance: referencedInstance,
-                            path: referenced.pathToModel
-                        });
-                    }
-                }
-                catch (err) {
-                    return reject(err);
-                }
-                this.storage.insert(instance.getKey(), instance.getData())
+                this.storage.insert(instance.getKey(), instance.getDataForStorage())
                     .then(({ cas }) => __awaiter(this, void 0, void 0, function* () {
                     instance.setCas(cas);
-                    for (let referencedInstance of referencedInstances) {
-                        lodash_1.set(instance, referencedInstance.path, referencedInstance.instance);
+                    for (let referenced of instance.getReferencedModels()) {
+                        if (!referenced.data.getId()) {
+                            continue;
+                        }
+                        lodash_1.set(instance, `${referenced.pathToModel}`, referenced.data);
                     }
                     resolve(instance);
                 }))
