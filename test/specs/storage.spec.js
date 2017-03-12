@@ -311,7 +311,7 @@ test.serial('it builds deferred indexes', async () => {
   index = indexes.find(index => {
     return setTimeout(() => {
       return index.name === 'findByPower'
-    }, 500)
+    }, 2000)
   })
 
   index.state.should.eq('online')
