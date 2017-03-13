@@ -5,6 +5,7 @@
 [![Build Status](https://travis-ci.org/LimeDeck/settee.svg?branch=master)](https://travis-ci.org/LimeDeck/settee)
 [![Coverage Status](https://coveralls.io/repos/github/LimeDeck/settee/badge.svg?branch=master)](https://coveralls.io/github/LimeDeck/settee?branch=master)
 [![GitHub release](https://img.shields.io/github/release/LimeDeck/settee.svg)](https://github.com/limedeck/settee)
+[![npm](https://img.shields.io/npm/dt/settee.svg)](https://www.npmjs.com/package/settee)
 
 
 Settee is a modern ODM for Couchbase (and Node.js), featuring a custom query builder, and fast, easy-to-use code.
