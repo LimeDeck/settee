@@ -29,7 +29,7 @@ export declare type Methods = {
 }
 
 export declare type Layout = {
-  isJoi: boolean,
+  isJoi?: boolean,
   [key: string]: JoiSchema|Layout|Layout[]
 }
 
