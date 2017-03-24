@@ -109,7 +109,7 @@ export default class Instance {
      */
     applyData(): void;
     /**
-     * Finds
+     * Finds referenced data in an object.
      *
      * @return {void}
      */

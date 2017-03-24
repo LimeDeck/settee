@@ -189,25 +189,44 @@ class Instance {
                 enumerable: true,
                 configurable: true,
                 get() {
+                    if (Array.isArray(this.modelInstance.data[name])) {
+                        let monitoredKey = 0;
+                        for (let referenced of this.getReferencedModels()) {
+                            /* istanbul ignore if */
+                            if (!referenced.data.getId()) {
+                                continue;
+                            }
+                            let baseKey = referenced.pathToModel;
+                            // in case the pathToModel is a deep reference
+                            if (referenced.pathToModel.includes('.')) {
+                                baseKey = referenced.pathToModel.replace('.', `[${monitoredKey}].`);
+                                monitoredKey++;
+                            }
+                            lodash_1.set(this.modelInstance.data, `${baseKey}`, referenced.data);
+                        }
+                    }
                     return this.modelInstance.data[name];
                 },
                 set(value) {
                     this.modelInstance.dirty = true;
                     // experimental fix for referenced arrays
                     if (Array.isArray(value)) {
-                        let arrayEntries = {};
-                        arrayEntries[name] = [];
+                        let referencedEntries = {};
+                        referencedEntries[name] = [];
                         value.forEach(entry => {
-                            let referenceKey = Object.keys(entry)[0];
                             // only process entries that are arrays of references
-                            /* istanbul ignore else */
-                            if (referenceKey && entry[referenceKey] instanceof Instance) {
-                                arrayEntries[name].push(entry);
-                            }
+                            Object.keys(entry).forEach(key => {
+                                if (entry[key] instanceof Instance) {
+                                    referencedEntries[name].push({ [key]: entry[key] });
+                                }
+                                else {
+                                    this.modelInstance.data[name].push({ [key]: entry[key] });
+                                }
+                            });
                         });
                         /* istanbul ignore else */
-                        if (Object.keys(arrayEntries).length > 0) {
-                            this.findReferences(arrayEntries);
+                        if (Object.keys(referencedEntries).length > 0) {
+                            this.findReferences(referencedEntries);
                         }
                     }
                     else {
@@ -219,7 +238,7 @@ class Instance {
         }
     }
     /**
-     * Finds
+     * Finds referenced data in an object.
      *
      * @return {void}
      */
