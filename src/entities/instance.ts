@@ -157,7 +157,8 @@ export default class Instance {
    */
   public async delete (): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-      this.storage.remove(this.getKey(), { cas: this.getCas() })
+      // TODO: add second arg { cas: this.getCas() } when CB is updated to 4.6.0
+      this.storage.remove(this.getKey())
         .then(async () => {
           let referencedKeysToDelete = new Set()
 
@@ -201,8 +202,17 @@ export default class Instance {
   public getDataForStorage (): {} {
     let storageData = Object.assign({}, this.modelInstance.data)
 
+    let monitoredKey = 0
+
     this.modelInstance.referencedModels.forEach(reference => {
-      set(storageData, reference.pathToModel, {
+      let baseKey = reference.pathToModel
+
+      if (reference.pathToModel.includes('.')) {
+        baseKey = reference.pathToModel.replace('.', `[${monitoredKey}].`)
+        monitoredKey++
+      }
+
+      set(storageData, baseKey, {
         $type: 'reference',
         docType: reference.model,
         docId: reference.data.getId()
@@ -229,7 +239,28 @@ export default class Instance {
         },
         set (value) {
           this.modelInstance.dirty = true
-          this.modelInstance.data[name] = value
+
+          // experimental fix for referenced arrays
+          if (Array.isArray(value)) {
+            let arrayEntries = {}
+            arrayEntries[name] = []
+
+            value.forEach(entry => {
+              let referenceKey = Object.keys(entry)[0]
+              // only process entries that are arrays of references
+              /* istanbul ignore else */
+              if (referenceKey && entry[referenceKey] instanceof Instance) {
+                arrayEntries[name].push(entry)
+              }
+            })
+
+            /* istanbul ignore else */
+            if (Object.keys(arrayEntries).length > 0) {
+              this.findReferences(arrayEntries)
+            }
+          } else {
+            this.modelInstance.data[name] = value
+          }
         }
       })
 

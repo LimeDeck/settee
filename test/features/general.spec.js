@@ -240,3 +240,48 @@ test.serial('workflow with referenced models', async () => {
 
   await bmw.delete()
 })
+
+test.serial('it can save referenced arrays when editing an entry', async () => {
+  const WheelSchema = new Schema('Wheel', {
+    brand: Type.string()
+  })
+
+  const Wheel = settee.buildModel(WheelSchema)
+
+  const CarSchema = new Schema('Car', {
+    brand: Type.string(),
+    topSpeed: Type.number(),
+    taxPaid: Type.boolean(),
+    wheels: Type.array(Type.object({
+      wheelType: Type.reference(Wheel)
+    }))
+  })
+
+  const Car = settee.buildModel(CarSchema)
+
+  settee.registerModels([Car, Wheel])
+
+  let michelinWheel = await Wheel.create({
+    brand: 'Michelin'
+  })
+
+  let bridgestoneWheel = await Wheel.create({
+    brand: 'Bridgestone'
+  })
+
+  let bmw = await Car.create({
+    brand: 'BMW'
+  })
+
+  bmw.wheels = [
+    { wheelType: michelinWheel },
+    { wheelType: bridgestoneWheel }
+  ]
+
+  await bmw.save()
+
+  bmw.brand.should.eq('BMW')
+  bmw.wheels.should.have.lengthOf(2)
+
+  await bmw.delete()
+})

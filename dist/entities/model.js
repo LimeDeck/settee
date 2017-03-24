@@ -109,11 +109,18 @@ class Model {
                 this.storage.insert(instance.getKey(), instance.getDataForStorage())
                     .then(({ cas }) => __awaiter(this, void 0, void 0, function* () {
                     instance.setCas(cas);
+                    let monitoredKey = 0;
                     for (let referenced of instance.getReferencedModels()) {
                         if (!referenced.data.getId()) {
                             continue;
                         }
-                        lodash_1.set(instance, `${referenced.pathToModel}`, referenced.data);
+                        let baseKey = referenced.pathToModel;
+                        // in case the pathToModel is a deep reference
+                        if (referenced.pathToModel.includes('.')) {
+                            baseKey = referenced.pathToModel.replace('.', `[${monitoredKey}].`);
+                            monitoredKey++;
+                        }
+                        lodash_1.set(instance, `${baseKey}`, referenced.data);
                     }
                     resolve(instance);
                 }))
