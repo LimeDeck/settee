@@ -241,7 +241,7 @@ test.serial('workflow with referenced models', async () => {
   await bmw.delete()
 })
 
-test.serial('it can save referenced arrays when editing an entry', async () => {
+test.serial('it can save referenced arrays when editing an entry', async t => {
   const WheelSchema = new Schema('Wheel', {
     brand: Type.string()
   })
@@ -253,7 +253,8 @@ test.serial('it can save referenced arrays when editing an entry', async () => {
     topSpeed: Type.number(),
     taxPaid: Type.boolean(),
     wheels: Type.array(Type.object({
-      wheelType: Type.reference(Wheel)
+      wheelType: Type.reference(Wheel),
+      addedAt: Type.date()
     }))
   })
 
@@ -274,14 +275,18 @@ test.serial('it can save referenced arrays when editing an entry', async () => {
   })
 
   bmw.wheels = [
-    { wheelType: michelinWheel },
-    { wheelType: bridgestoneWheel }
+    { wheelType: michelinWheel, addedAt: Date.now() },
+    { wheelType: bridgestoneWheel, addedAt: Date.now() }
   ]
 
   await bmw.save()
 
   bmw.brand.should.eq('BMW')
   bmw.wheels.should.have.lengthOf(2)
+  bmw.wheels[0].wheelType.brand.should.eq('Michelin')
+  bmw.wheels[1].wheelType.brand.should.eq('Bridgestone')
+  t.not(bmw.wheels[0].addedAt, null)
+  t.not(bmw.wheels[0].addedAt, null)
 
   await bmw.delete()
 })

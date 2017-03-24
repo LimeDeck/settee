@@ -149,24 +149,6 @@ export default class Model {
         .then(async ({ cas }) => {
           instance.setCas(cas)
 
-          let monitoredKey = 0
-
-          for (let referenced of instance.getReferencedModels()) {
-            if (!referenced.data.getId()) {
-              continue
-            }
-
-            let baseKey = referenced.pathToModel
-
-            // in case the pathToModel is a deep reference
-            if (referenced.pathToModel.includes('.')) {
-              baseKey = referenced.pathToModel.replace('.', `[${monitoredKey}].`)
-              monitoredKey++
-            }
-
-            set(instance, `${baseKey}`, referenced.data)
-          }
-
           resolve(instance)
         })
         .catch(err => reject(err))
