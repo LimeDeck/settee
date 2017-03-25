@@ -162,12 +162,10 @@ class Instance {
      */
     getDataForStorage() {
         let storageData = Object.assign({}, this.modelInstance.data);
-        let monitoredKey = 0;
         this.modelInstance.referencedModels.forEach(reference => {
             let baseKey = reference.pathToModel;
             if (reference.pathToModel.includes('.')) {
-                baseKey = reference.pathToModel.replace('.', `[${monitoredKey}].`);
-                monitoredKey++;
+                baseKey = reference.pathToModel.replace('.', `[${reference.position}].`);
             }
             lodash_1.set(storageData, baseKey, {
                 $type: 'reference',
@@ -190,19 +188,9 @@ class Instance {
                 configurable: true,
                 get() {
                     if (Array.isArray(this.modelInstance.data[name])) {
-                        let monitoredKey = 0;
-                        for (let referenced of this.getReferencedModels()) {
-                            /* istanbul ignore if */
-                            if (!referenced.data.getId()) {
-                                continue;
-                            }
-                            let baseKey = referenced.pathToModel;
-                            // in case the pathToModel is a deep reference
-                            if (referenced.pathToModel.includes('.')) {
-                                baseKey = referenced.pathToModel.replace('.', `[${monitoredKey}].`);
-                                monitoredKey++;
-                            }
-                            lodash_1.set(this.modelInstance.data, `${baseKey}`, referenced.data);
+                        for (let referenced of this.modelInstance.referencedModels) {
+                            let baseKey = referenced.pathToModel.replace('.', `[${referenced.position}].`);
+                            lodash_1.set(this.modelInstance.data, baseKey, referenced.data);
                         }
                     }
                     return this.modelInstance.data[name];
@@ -244,6 +232,7 @@ class Instance {
      */
     findReferences(object, prev = null, currentDepth = 1) {
         Object.keys(object).forEach(key => {
+            let position = 0;
             let value = object[key];
             let isArray = Array.isArray(value);
             let type = Object.prototype.toString.call(value);
@@ -257,7 +246,16 @@ class Instance {
             }
             if (!isArray && isObject && Object.keys(value).length) {
                 if (value instanceof Instance) {
+                    let clonedReferences;
+                    function referencePresent(item) {
+                        if (item.model === value.getType()) {
+                            return position = item.position + 1;
+                        }
+                    }
+                    clonedReferences = Array.from(this.modelInstance.referencedModels).reverse();
+                    clonedReferences.find(referencePresent);
                     this.modelInstance.referencedModels.push({
+                        position,
                         data: value,
                         model: value.getType(),
                         pathToModel: newKey

@@ -246,7 +246,13 @@ test.serial('it can save referenced arrays when editing an entry', async t => {
     brand: Type.string()
   })
 
+  const AlloySchema = new Schema('Alloy', {
+    size: Type.number()
+  })
+
+
   const Wheel = settee.buildModel(WheelSchema)
+  const Alloy = settee.buildModel(AlloySchema)
 
   const CarSchema = new Schema('Car', {
     brand: Type.string(),
@@ -254,16 +260,21 @@ test.serial('it can save referenced arrays when editing an entry', async t => {
     taxPaid: Type.boolean(),
     wheels: Type.array(Type.object({
       wheelType: Type.reference(Wheel),
+      alloyType: Type.reference(Alloy),
       addedAt: Type.date()
     }))
   })
 
   const Car = settee.buildModel(CarSchema)
 
-  settee.registerModels([Car, Wheel])
+  settee.registerModels([Car, Wheel, Alloy])
 
   let michelinWheel = await Wheel.create({
     brand: 'Michelin'
+  })
+
+  let michelinAlloy = await Alloy.create({
+    size: 19
   })
 
   let bridgestoneWheel = await Wheel.create({
@@ -274,19 +285,34 @@ test.serial('it can save referenced arrays when editing an entry', async t => {
     brand: 'BMW'
   })
 
+
   bmw.wheels = [
-    { wheelType: michelinWheel, addedAt: Date.now() },
-    { wheelType: bridgestoneWheel, addedAt: Date.now() }
+    { wheelType: michelinWheel, alloyType: michelinAlloy, addedAt: Date.now() },
+    { wheelType: michelinWheel, alloyType: michelinAlloy, addedAt: Date.now() },
+    { wheelType: bridgestoneWheel, alloyType: michelinAlloy, addedAt: Date.now() },
+    { wheelType: bridgestoneWheel, alloyType: michelinAlloy, addedAt: Date.now() }
   ]
 
   await bmw.save()
 
   bmw.brand.should.eq('BMW')
-  bmw.wheels.should.have.lengthOf(2)
+  bmw.wheels.should.have.lengthOf(4)
+
   bmw.wheels[0].wheelType.brand.should.eq('Michelin')
-  bmw.wheels[1].wheelType.brand.should.eq('Bridgestone')
+  bmw.wheels[0].alloyType.size.should.eq(19)
   t.not(bmw.wheels[0].addedAt, null)
-  t.not(bmw.wheels[0].addedAt, null)
+
+  bmw.wheels[1].wheelType.brand.should.eq('Michelin')
+  bmw.wheels[1].alloyType.size.should.eq(19)
+  t.not(bmw.wheels[1].addedAt, null)
+
+  bmw.wheels[2].wheelType.brand.should.eq('Bridgestone')
+  bmw.wheels[2].alloyType.size.should.eq(19)
+  t.not(bmw.wheels[2].addedAt, null)
+
+  bmw.wheels[3].wheelType.brand.should.eq('Bridgestone')
+  bmw.wheels[3].alloyType.size.should.eq(19)
+  t.not(bmw.wheels[3].addedAt, null)
 
   await bmw.delete()
 })

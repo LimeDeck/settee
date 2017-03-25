@@ -34,6 +34,7 @@ export declare type Layout = {
 }
 
 export declare type ReferencedModels = Array<{
+  position: any,
   data: any,
   model: string,
   pathToModel: string
